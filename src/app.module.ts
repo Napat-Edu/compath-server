@@ -2,9 +2,15 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CareerPredictionModule } from './career-prediction/career-prediction.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [CareerPredictionModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    CareerPredictionModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
