@@ -14,7 +14,7 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     ENV_MODULE,
     MongooseModule.forRoot(process.env.MONGODB_URL, {
-      dbName: 'compath-db',
+      dbName: process.env.DB_NAME,
     }),
     ConfigModule.forRoot({
       isGlobal: true,
