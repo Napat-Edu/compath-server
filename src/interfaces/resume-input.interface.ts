@@ -1,5 +1,5 @@
-export interface IResumeInput {
-  educational: string;
-  skill: string;
-  experience: string;
-}
+// export interface IResumeInput {
+//   educational: string;
+//   skill: string;
+//   experience: string;
+// }
