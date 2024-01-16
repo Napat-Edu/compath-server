@@ -10,8 +10,6 @@ import { AppService } from './app.service';
 import { CareerPredictionModule } from './career-prediction/career-prediction.module';
 import { MongooseModule } from '@nestjs/mongoose';
 
-console.log(process.env.DB_NAME);
-
 @Module({
   imports: [
     ENV_MODULE,
