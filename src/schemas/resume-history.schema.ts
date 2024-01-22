@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { IResumeInput } from 'src/interfaces/resume-input.interface';
+import { IUserResume } from 'src/interfaces/career-prediction.interface';
 
 export type ResumeHistoryDocument = HydratedDocument<ResumeHistory>;
 
@@ -10,7 +10,7 @@ export class ResumeHistory {
   resume_owner: string;
 
   @Prop({ type: Object })
-  resume_input: IResumeInput;
+  resume_input: IUserResume;
 
   @Prop()
   input_date: Date;
