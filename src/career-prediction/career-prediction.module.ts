@@ -6,12 +6,14 @@ import {
   ResumeHistory,
   ResumeHistorySchema,
 } from 'src/schemas/resume-history.schema';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ResumeHistory.name, schema: ResumeHistorySchema },
     ]),
+    HttpModule,
   ],
   controllers: [CareerPredictionController],
   providers: [CareerPredictionService],

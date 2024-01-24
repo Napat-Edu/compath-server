@@ -11,7 +11,13 @@ export class CareerPredictionController {
 
   @Get()
   getCareerPrediction(@Query() userResumeInput: IUserResume): any {
-    return this.careerPredictionService.getCareerPredictionResult(userResumeInput);
+    try {
+      return this.careerPredictionService.getCareerPredictionResult(
+        userResumeInput,
+      );
+    } catch (err) {
+      return err;
+    }
   }
 
   @Post('/create/resume-history')
