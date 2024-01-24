@@ -4,11 +4,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
+import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
 import {
   ICareerPredictionResult,
   IUserResume,
 } from 'src/interfaces/career-prediction.interface';
+import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
 
 @Injectable()
@@ -19,6 +21,8 @@ export class CareerPredictionService {
     private readonly httpService: HttpService,
     @InjectModel(ResumeHistory.name)
     private resumeHistoryModel: Model<ResumeHistory>,
+    @InjectModel(CareerPathData.name)
+    private careerPathDataModel: Model<CareerPathData>,
   ) {}
 
   async getCareerPredictionResult(
@@ -37,23 +41,23 @@ export class CareerPredictionService {
         ),
     );
 
+    let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel.findOne({
+      career_path_name: predictionResult.data
+    }).exec();
+
+    if(!careerPathInfo) {
+      careerPathInfo = await this.careerPathDataModel.findOne({
+        career_path_name: 'Unknown'
+      }).exec();
+    }
+
     const result: ICareerPredictionResult = {
-      career: predictionResult.data,
-      description: 'ผู้สร้างสรรค์ซอฟต์แวร์ขึ้นมาให้เป็นจริง',
-      relatedCareers: [
-        'frontend developer',
-        'backend developer',
-        'full-stack developer',
-      ],
-      baseSalary: 30000,
+      career: careerPathInfo.career_path_name,
+      description: careerPathInfo.career_path_description,
+      relatedCareers: careerPathInfo.related_careers,
+      baseSalary: careerPathInfo.base_salary,
       careermatesCount: 0,
-      icon: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
-      <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>      
-      `,
+      icon: careerPathInfo.icon_svg,
     };
     return result;
   }
