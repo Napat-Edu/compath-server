@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
+import { ISalary } from "src/interfaces/career-prediction.interface";
 
 export type CareerPathDataDocument = HydratedDocument<CareerPathData>;
 
@@ -14,8 +15,8 @@ export class CareerPathData {
     @Prop()
     related_careers: string[];
 
-    @Prop()
-    base_salary: number;
+    @Prop({ type: Object })
+    base_salary: ISalary;
 
     @Prop()
     icon_svg: string;
