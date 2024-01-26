@@ -46,9 +46,22 @@ export class CareerPredictionService {
     }).exec();
 
     if(!careerPathInfo) {
-      careerPathInfo = await this.careerPathDataModel.findOne({
-        career_path_name: 'Unknown'
-      }).exec();
+      const careerUnkownData: CareerPathDataDto = {
+        career_path_name: 'Unknown',
+        career_path_description: 'server may cause some errors',
+        related_careers: ['none'],
+        base_salary: {
+          min_salary: 0,
+          max_salary: 0
+        },
+        icon_svg: `
+        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+        <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`
+      };
+      careerPathInfo = careerUnkownData;
     }
 
     const result: ICareerPredictionResult = {
