@@ -28,7 +28,7 @@ export class CareerPredictionService {
     const predictionResult = await firstValueFrom(
       this.httpService
         .get(process.env.MODEL_API, {
-          params: userResumeInput,
+          params: userResumeInput.resume_input,
         })
         .pipe(
           catchError((err: AxiosError) => {
