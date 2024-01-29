@@ -14,6 +14,9 @@ export class ResumeHistory {
 
   @Prop()
   input_date: Date;
+
+  @Prop()
+  prediction_result: string;
 }
 
 export const ResumeHistorySchema = SchemaFactory.createForClass(ResumeHistory);
