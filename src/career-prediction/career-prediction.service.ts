@@ -6,10 +6,7 @@ import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
-import {
-  ICareerPredictionResult,
-  IUserResume,
-} from 'src/interfaces/career-prediction.interface';
+import { ICareerPredictionResult } from 'src/interfaces/career-prediction.interface';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
 
@@ -26,7 +23,7 @@ export class CareerPredictionService {
   ) {}
 
   async getCareerPredictionResult(
-    userResumeInput: IUserResume,
+    userResumeInput: ResumeInputDto,
   ): Promise<ICareerPredictionResult> {
     const predictionResult = await firstValueFrom(
       this.httpService
@@ -41,25 +38,27 @@ export class CareerPredictionService {
         ),
     );
 
-    let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel.findOne({
-      career_path_name: predictionResult.data
-    }).exec();
+    let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
+      .findOne({
+        career_path_name: predictionResult.data,
+      })
+      .exec();
 
-    if(!careerPathInfo) {
+    if (!careerPathInfo) {
       const careerUnkownData: CareerPathDataDto = {
         career_path_name: 'Unknown',
         career_path_description: 'server may cause some errors',
         related_careers: ['none'],
         base_salary: {
           min_salary: 0,
-          max_salary: 0
+          max_salary: 0,
         },
         icon_svg: `
         <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
         <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`
+        </svg>`,
       };
       careerPathInfo = careerUnkownData;
     }
@@ -72,12 +71,22 @@ export class CareerPredictionService {
       careermatesCount: 0,
       icon: careerPathInfo.icon_svg,
     };
+
+    const resumeHistory: ResumeInputDto = {
+      resume_owner: userResumeInput.resume_owner ?? 'anonymous',
+      resume_input: userResumeInput.resume_input,
+      input_date: undefined,
+      prediction_result: result.career,
+    };
+    this.createCareerPredictionHistory(resumeHistory);
+
     return result;
   }
 
   createCareerPredictionHistory(
     resumeInputDto: ResumeInputDto,
   ): Promise<ResumeHistory> {
+    resumeInputDto.input_date = new Date();
     const createdResumeHistory = new this.resumeHistoryModel(resumeInputDto);
     return createdResumeHistory.save();
   }
