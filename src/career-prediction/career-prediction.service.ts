@@ -6,7 +6,10 @@ import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
-import { ICareerPredictionResult } from 'src/interfaces/career-prediction.interface';
+import {
+  ICareerPredictionResult,
+  IUserResume,
+} from 'src/interfaces/career-prediction.interface';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
 
@@ -22,25 +25,16 @@ export class CareerPredictionService {
     private careerPathDataModel: Model<CareerPathData>,
   ) {}
 
-  async getCareerPredictionResult(
+  async createCareerPredictionResult(
     userResumeInput: ResumeInputDto,
   ): Promise<ICareerPredictionResult> {
-    const predictionResult = await firstValueFrom(
-      this.httpService
-        .get(process.env.MODEL_API, {
-          params: userResumeInput.resume_input,
-        })
-        .pipe(
-          catchError((err: AxiosError) => {
-            this.logger.error(err.response.data);
-            throw 'error occured';
-          }),
-        ),
+    const predictionCareer = await this.getCareerPrediction(
+      userResumeInput.resume_input,
     );
 
     let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
       .findOne({
-        career_path_name: predictionResult.data,
+        career_path_name: predictionCareer,
       })
       .exec();
 
@@ -81,6 +75,18 @@ export class CareerPredictionService {
     this.createCareerPredictionHistory(resumeHistory);
 
     return result;
+  }
+
+  async getCareerPrediction(data: IUserResume) {
+    const predictionResult = await firstValueFrom(
+      this.httpService.post(process.env.MODEL_API, data).pipe(
+        catchError((err: AxiosError) => {
+          this.logger.error(err.response.data);
+          throw 'error occured';
+        }),
+      ),
+    );
+    return predictionResult.data;
   }
 
   createCareerPredictionHistory(

@@ -9,9 +9,9 @@ export class CareerPredictionController {
   ) {}
 
   @Post()
-  getCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
+  createCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
     try {
-      return this.careerPredictionService.getCareerPredictionResult(
+      return this.careerPredictionService.createCareerPredictionResult(
         userResumeInput,
       );
     } catch (err) {
