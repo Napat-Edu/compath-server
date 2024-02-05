@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
-import { Model } from 'mongoose';
+import { Model, ObjectId } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
@@ -64,6 +64,7 @@ export class CareerPredictionService {
       baseSalary: careerPathInfo.base_salary,
       careermatesCount: 0,
       icon: careerPathInfo.icon_svg,
+      objectId: null,
     };
 
     const resumeHistory: ResumeInputDto = {
@@ -72,7 +73,9 @@ export class CareerPredictionService {
       input_date: undefined,
       prediction_result: result.career,
     };
-    this.createCareerPredictionHistory(resumeHistory);
+    const objectId: any =
+      await this.createCareerPredictionHistory(resumeHistory);
+    result.objectId = objectId._id;
 
     return result;
   }

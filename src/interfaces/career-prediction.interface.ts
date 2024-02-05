@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongoose';
+
 export interface IUserResume {
   skill: string;
   educational: string;
@@ -12,6 +14,7 @@ export interface ICareerPredictionResult {
   baseSalary: ISalary;
   careermatesCount: number;
   icon: string;
+  objectId: ObjectId;
 }
 
 export interface ISalary {
