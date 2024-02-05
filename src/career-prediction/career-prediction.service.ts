@@ -32,11 +32,8 @@ export class CareerPredictionService {
       userResumeInput.resume_input,
     );
 
-    let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
-      .findOne({
-        career_path_name: predictionCareer,
-      })
-      .exec();
+    let careerPathInfo: CareerPathDataDto =
+      await this.getCareerPathInfo(predictionCareer);
 
     if (!careerPathInfo) {
       const careerUnkownData: CareerPathDataDto = {
@@ -90,6 +87,18 @@ export class CareerPredictionService {
       ),
     );
     return predictionResult.data;
+  }
+
+  async getCareerPathInfo(careerPath: string) {
+    try {
+      return await this.careerPathDataModel
+        .findOne({
+          career_path_name: careerPath,
+        })
+        .exec();
+    } catch (error) {
+      return error;
+    }
   }
 
   createCareerPredictionHistory(

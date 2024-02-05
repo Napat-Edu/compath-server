@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { CareerPredictionService } from './career-prediction.service';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
 
@@ -7,6 +7,11 @@ export class CareerPredictionController {
   constructor(
     private readonly careerPredictionService: CareerPredictionService,
   ) {}
+
+  @Get()
+  getCareerPathInfo(@Query() query: { careerPath: string }) {
+    return this.careerPredictionService.getCareerPathInfo(query.careerPath);
+  }
 
   @Post()
   createCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
