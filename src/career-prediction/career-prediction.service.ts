@@ -91,11 +91,21 @@ export class CareerPredictionService {
 
   async getCareerPathInfo(careerPath: string) {
     try {
-      return await this.careerPathDataModel
+      const careerInfo = await this.careerPathDataModel
         .findOne({
           career_path_name: careerPath,
         })
         .exec();
+      const result: ICareerPredictionResult = {
+        career: careerInfo.career_path_name,
+        description: careerInfo.career_path_description,
+        relatedCareers: careerInfo.related_careers,
+        baseSalary: careerInfo.base_salary,
+        careermatesCount: 0,
+        icon: careerInfo.icon_svg,
+        objectId: null,
+      };
+      return result;
     } catch (error) {
       return error;
     }
