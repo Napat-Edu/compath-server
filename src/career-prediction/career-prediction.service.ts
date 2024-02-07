@@ -32,37 +32,32 @@ export class CareerPredictionService {
       userResumeInput.resume_input,
     );
 
-    let careerPathInfo: CareerPathDataDto =
+    let careerPathInfo: ICareerPredictionResult =
       await this.getCareerPathInfo(predictionCareer);
 
     if (!careerPathInfo) {
-      const careerUnkownData: CareerPathDataDto = {
-        career_path_name: 'Unknown',
-        career_path_description: 'server may cause some errors',
-        related_careers: ['none'],
-        base_salary: {
+      const careerUnkownData: ICareerPredictionResult = {
+        career: 'Unknown',
+        description: 'server may cause some errors',
+        relatedCareers: ['none'],
+        baseSalary: {
           min_salary: 0,
           max_salary: 0,
         },
-        icon_svg: `
+        icon: `
         <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
         <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`,
+        careermatesCount: 0,
+        objectId: null,
+        inputDate: undefined,
       };
       careerPathInfo = careerUnkownData;
     }
 
-    const result: ICareerPredictionResult = {
-      career: careerPathInfo.career_path_name,
-      description: careerPathInfo.career_path_description,
-      relatedCareers: careerPathInfo.related_careers,
-      baseSalary: careerPathInfo.base_salary,
-      careermatesCount: 0,
-      icon: careerPathInfo.icon_svg,
-      objectId: null,
-    };
+    const result: ICareerPredictionResult = careerPathInfo;
 
     const resumeHistory: ResumeInputDto = {
       resume_owner: userResumeInput.resume_owner ?? 'anonymous',
@@ -70,9 +65,10 @@ export class CareerPredictionService {
       input_date: undefined,
       prediction_result: result.career,
     };
-    const objectId: any =
+    const newPredictionDoc: any =
       await this.createCareerPredictionHistory(resumeHistory);
-    result.objectId = objectId._id;
+    result.objectId = newPredictionDoc._id;
+    result.inputDate = newPredictionDoc.input_date;
 
     return result;
   }
@@ -104,6 +100,7 @@ export class CareerPredictionService {
         careermatesCount: 0,
         icon: careerInfo.icon_svg,
         objectId: null,
+        inputDate: undefined,
       };
       return result;
     } catch (error) {

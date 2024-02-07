@@ -14,6 +14,7 @@ export interface ICareerPredictionResult {
   baseSalary: ISalary;
   careermatesCount: number;
   icon: string;
+  inputDate: Date;
   objectId: ObjectId;
 }
 
