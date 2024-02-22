@@ -187,6 +187,18 @@ export class CareerPredictionService {
     }
   }
 
+  async getCareerInsight(careerPath: string, objectId: string) {
+    const careerInsightDetail = await this.getCareerPathInfo(careerPath);
+    const userResume: any = await this.resumeHistoryModel
+      .findOne({
+        _id: objectId,
+      })
+      .exec();
+    const userSkill = userResume.resume_input.skill;
+
+    return userSkill;
+  }
+
   createCareerPredictionHistory(
     resumeInputDto: ResumeInputDto,
   ): Promise<ResumeHistory> {

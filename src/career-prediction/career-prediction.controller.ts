@@ -13,6 +13,14 @@ export class CareerPredictionController {
     return this.careerPredictionService.getCareerPathInfo(query.careerPath);
   }
 
+  @Get('/insight')
+  getCareerInsight(@Query() query: { careerPath: string; objectId: string }) {
+    return this.careerPredictionService.getCareerInsight(
+      query.careerPath,
+      query.objectId,
+    );
+  }
+
   @Post()
   createCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
     try {
