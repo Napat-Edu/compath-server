@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
-import { Model, ObjectId } from 'mongoose';
+import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeInputDto } from 'src/dtos/resume-input.dto';
@@ -25,7 +25,7 @@ export class CareerPredictionService {
     private careerPathDataModel: Model<CareerPathData>,
   ) {}
 
-  async createCareerPredictionResult(
+  async createCareerPrediction(
     userResumeInput: ResumeInputDto,
   ): Promise<ICareerPredictionResult> {
     const predictionCareer = await this.getCareerPrediction(
