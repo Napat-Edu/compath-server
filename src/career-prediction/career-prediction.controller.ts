@@ -16,19 +16,8 @@ export class CareerPredictionController {
   @Post()
   createCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
     try {
-      return this.careerPredictionService.createCareerPredictionResult(
+      return this.careerPredictionService.createCareerPrediction(
         userResumeInput,
-      );
-    } catch (err) {
-      return err;
-    }
-  }
-
-  @Post('/create/resume-history')
-  createCareerPredictionHistory(@Body() newResumeHistory: ResumeInputDto) {
-    try {
-      return this.careerPredictionService.createCareerPredictionHistory(
-        newResumeHistory,
       );
     } catch (err) {
       return err;
