@@ -7,10 +7,15 @@ export interface IUserResume {
   agreement: boolean;
 }
 
+export interface ICareer {
+  career: string;
+  skillDomains: string[];
+}
+
 export interface ICareerPredictionResult {
   career: string;
   description: string;
-  relatedCareers: string[];
+  relatedCareers: ICareer[];
   baseSalary: ISalary;
   careermatesCount: number;
   icon: string;

@@ -39,7 +39,7 @@ export class CareerPredictionService {
       const careerUnkownData: ICareerPredictionResult = {
         career: 'Unknown',
         description: 'server may cause some errors',
-        relatedCareers: ['none'],
+        relatedCareers: [],
         baseSalary: {
           min_salary: 0,
           max_salary: 0,
@@ -87,15 +87,94 @@ export class CareerPredictionService {
 
   async getCareerPathInfo(careerPath: string) {
     try {
-      const careerInfo = await this.careerPathDataModel
-        .findOne({
-          career_path_name: careerPath,
-        })
-        .exec();
+      const careerInfo: CareerPathDataDto = await this.careerPathDataModel
+        .aggregate([
+          {
+            $match: {
+              career_path_name: careerPath,
+            },
+          },
+          {
+            $unwind: '$related_careers',
+          },
+          {
+            $lookup: {
+              from: 'skilldomains',
+              localField: 'related_careers.skill_domains',
+              foreignField: 'id',
+              as: 'career_domains',
+            },
+          },
+          {
+            $unwind: '$career_domains',
+          },
+          {
+            $lookup: {
+              from: 'skilldatas',
+              localField: 'career_domains.skill_list',
+              foreignField: 'id',
+              as: 'skill_data',
+            },
+          },
+          {
+            $group: {
+              _id: {
+                career_path_id: '$_id',
+                career_path_name: '$career_path_name',
+                career_path_description: '$career_path_description',
+                base_salary: '$base_salary',
+                icon_svg: '$icon_svg',
+                career: '$related_careers.career',
+              },
+              skill_domains: {
+                $push: {
+                  id: '$career_domains.id',
+                  name: '$career_domains.name',
+                  skill_list: '$skill_data.name',
+                  is_in_resume: '$career_domains.is_in_resume',
+                },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: '$_id.career_path_id',
+              career_path_name: { $first: '$_id.career_path_name' },
+              career_path_description: {
+                $first: '$_id.career_path_description',
+              },
+              base_salary: { $first: '$_id.base_salary' },
+              icon_svg: { $first: '$_id.icon_svg' },
+              related_careers: {
+                $push: {
+                  career: '$_id.career',
+                  skill_domains: '$skill_domains',
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              career_path_name: 1,
+              career_path_description: 1,
+              related_careers: 1,
+              base_salary: 1,
+              icon_svg: 1,
+            },
+          },
+        ])
+        .then((data) => data[0]);
+
       const result: ICareerPredictionResult = {
         career: careerInfo.career_path_name,
         description: careerInfo.career_path_description,
-        relatedCareers: careerInfo.related_careers,
+        relatedCareers: careerInfo.related_careers.map((careerData) => {
+          return {
+            career: careerData.career,
+            skillDomains: careerData.skill_domains,
+          };
+        }),
         baseSalary: careerInfo.base_salary,
         careermatesCount: 0,
         icon: careerInfo.icon_svg,
