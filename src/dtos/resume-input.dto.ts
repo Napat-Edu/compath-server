@@ -1,8 +1,8 @@
-import { IUserResume } from "src/interfaces/career-prediction.interface";
+import { ObjectId } from 'mongoose';
+import { IUserResumeInput } from 'src/interfaces/career-prediction.interface';
 
-export interface ResumeInputDto {
-  resume_owner?: string;
-  resume_input: IUserResume;
+export interface ResumeHistoryDto extends IUserResumeInput {
   input_date: Date;
   prediction_result: string;
+  _id?: ObjectId;
 }

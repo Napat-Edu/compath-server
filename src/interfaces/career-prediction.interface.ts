@@ -1,29 +1,20 @@
 import { ObjectId } from 'mongoose';
+import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 
-export interface IUserResume {
+export interface IUserResumeInput {
+  resume_owner: string | 'anonymous';
+  resume_input: IUserResumeInfo;
+}
+
+export interface IUserResumeInfo {
   skill: string;
   educational: string;
   experience: string;
   agreement: boolean;
 }
 
-export interface ICareer {
-  career: string;
-  skillDomains: string[];
-}
-
-export interface ICareerPredictionResult {
-  career: string;
-  description: string;
-  relatedCareers: ICareer[];
-  baseSalary: ISalary;
-  careermatesCount: number;
-  icon: string;
-  inputDate: Date;
-  objectId: ObjectId;
-}
-
-export interface ISalary {
-  min_salary: number;
-  max_salary: number;
+export interface IResumePredictionResult extends CareerPathDataDto {
+  careermate_count: number;
+  input_date: Date;
+  object_id: ObjectId;
 }

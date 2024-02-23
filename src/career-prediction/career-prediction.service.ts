@@ -5,10 +5,11 @@ import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
-import { ResumeInputDto } from 'src/dtos/resume-input.dto';
+import { ResumeHistoryDto } from 'src/dtos/resume-input.dto';
 import {
-  ICareerPredictionResult,
-  IUserResume,
+  IResumePredictionResult,
+  IUserResumeInfo,
+  IUserResumeInput,
 } from 'src/interfaces/career-prediction.interface';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
@@ -19,63 +20,64 @@ export class CareerPredictionService {
 
   constructor(
     private readonly httpService: HttpService,
-    @InjectModel(ResumeHistory.name)
-    private resumeHistoryModel: Model<ResumeHistory>,
     @InjectModel(CareerPathData.name)
     private careerPathDataModel: Model<CareerPathData>,
+    @InjectModel(ResumeHistory.name)
+    private resumeHistoryModel: Model<ResumeHistory>,
   ) {}
 
-  async createCareerPrediction(
-    userResumeInput: ResumeInputDto,
-  ): Promise<ICareerPredictionResult> {
-    const predictionCareer = await this.getCareerPrediction(
+  async createCareerPrediction(userResumeInput: IUserResumeInput) {
+    const careerPath = await this.predictCareerPath(
       userResumeInput.resume_input,
     );
 
-    let careerPathInfo: ICareerPredictionResult =
-      await this.getCareerPathInfo(predictionCareer);
+    const careerPathInfo = await this.findCareerPathInfo(careerPath);
 
-    if (!careerPathInfo) {
-      const careerUnkownData: ICareerPredictionResult = {
-        career: 'Unknown',
-        description: 'server may cause some errors',
-        relatedCareers: [],
-        baseSalary: {
-          min_salary: 0,
-          max_salary: 0,
-        },
-        icon: `
-        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
-        <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`,
-        careermatesCount: 0,
-        objectId: null,
-        inputDate: undefined,
-      };
-      careerPathInfo = careerUnkownData;
-    }
-
-    const result: ICareerPredictionResult = careerPathInfo;
-
-    const resumeHistory: ResumeInputDto = {
-      resume_owner: userResumeInput.resume_owner ?? 'anonymous',
+    const newResumeHistory: ResumeHistoryDto = {
+      resume_owner: userResumeInput.resume_owner,
       resume_input: userResumeInput.resume_input,
-      input_date: undefined,
-      prediction_result: result.career,
+      input_date: new Date(),
+      prediction_result: careerPathInfo.career_path_name,
     };
-    const newPredictionDoc: any =
-      await this.createCareerPredictionHistory(resumeHistory);
-    result.objectId = newPredictionDoc._id;
-    result.inputDate = newPredictionDoc.input_date;
+    const createdResumeHistory: ResumeHistoryDto =
+      await this.createNewResumeHistory(newResumeHistory);
+
+    const result: IResumePredictionResult = {
+      ...careerPathInfo,
+      input_date: createdResumeHistory.input_date,
+      object_id: createdResumeHistory._id,
+      careermate_count: 0,
+    };
 
     return result;
   }
 
-  async getCareerPrediction(data: IUserResume) {
+  async findCareerPathInfo(careerPath: string) {
+    try {
+      let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
+        .findOne({
+          career_path_name: careerPath,
+        })
+        .exec();
+
+      if (!careerPathInfo) {
+        careerPathInfo = await this.careerPathDataModel
+          .findOne({
+            career_path_name: 'Unknown',
+          })
+          .exec();
+      }
+      const jsonCareerPathInfo = JSON.stringify(careerPathInfo);
+      const parsedCareerPathInfo = JSON.parse(jsonCareerPathInfo);
+      return parsedCareerPathInfo;
+    } catch (err) {
+      return err;
+    }
+  }
+
+  async predictCareerPath(resume: IUserResumeInfo) {
     const predictionResult = await firstValueFrom(
-      this.httpService.post(process.env.MODEL_API, data).pipe(
+      this.httpService.post(process.env.MODEL_API, resume).pipe(
         catchError((err: AxiosError) => {
           this.logger.error(err.response.data);
           throw 'error occured';
@@ -85,125 +87,16 @@ export class CareerPredictionService {
     return predictionResult.data;
   }
 
-  async getCareerPathInfo(careerPath: string) {
-    try {
-      const careerInfo: CareerPathDataDto = await this.careerPathDataModel
-        .aggregate([
-          {
-            $match: {
-              career_path_name: careerPath,
-            },
-          },
-          {
-            $unwind: '$related_careers',
-          },
-          {
-            $lookup: {
-              from: 'skilldomains',
-              localField: 'related_careers.skill_domains',
-              foreignField: 'id',
-              as: 'career_domains',
-            },
-          },
-          {
-            $unwind: '$career_domains',
-          },
-          {
-            $lookup: {
-              from: 'skilldatas',
-              localField: 'career_domains.skill_list',
-              foreignField: 'id',
-              as: 'skill_data',
-            },
-          },
-          {
-            $group: {
-              _id: {
-                career_path_id: '$_id',
-                career_path_name: '$career_path_name',
-                career_path_description: '$career_path_description',
-                base_salary: '$base_salary',
-                icon_svg: '$icon_svg',
-                career: '$related_careers.career',
-              },
-              skill_domains: {
-                $push: {
-                  id: '$career_domains.id',
-                  name: '$career_domains.name',
-                  skill_list: '$skill_data.name',
-                  is_in_resume: '$career_domains.is_in_resume',
-                },
-              },
-            },
-          },
-          {
-            $group: {
-              _id: '$_id.career_path_id',
-              career_path_name: { $first: '$_id.career_path_name' },
-              career_path_description: {
-                $first: '$_id.career_path_description',
-              },
-              base_salary: { $first: '$_id.base_salary' },
-              icon_svg: { $first: '$_id.icon_svg' },
-              related_careers: {
-                $push: {
-                  career: '$_id.career',
-                  skill_domains: '$skill_domains',
-                },
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              career_path_name: 1,
-              career_path_description: 1,
-              related_careers: 1,
-              base_salary: 1,
-              icon_svg: 1,
-            },
-          },
-        ])
-        .then((data) => data[0]);
-
-      const result: ICareerPredictionResult = {
-        career: careerInfo.career_path_name,
-        description: careerInfo.career_path_description,
-        relatedCareers: careerInfo.related_careers.map((careerData) => {
-          return {
-            career: careerData.career,
-            skillDomains: careerData.skill_domains,
-          };
-        }),
-        baseSalary: careerInfo.base_salary,
-        careermatesCount: 0,
-        icon: careerInfo.icon_svg,
-        objectId: null,
-        inputDate: undefined,
-      };
-      return result;
-    } catch (error) {
-      return error;
-    }
-  }
-
-  async getCareerInsight(careerPath: string, objectId: string) {
-    const careerInsightDetail = await this.getCareerPathInfo(careerPath);
-    const userResume: any = await this.resumeHistoryModel
-      .findOne({
-        _id: objectId,
-      })
-      .exec();
-    const userSkill = userResume.resume_input.skill;
-
-    return userSkill;
-  }
-
-  createCareerPredictionHistory(
-    resumeInputDto: ResumeInputDto,
+  createNewResumeHistory(
+    newResumeHistory: ResumeHistoryDto,
   ): Promise<ResumeHistory> {
-    resumeInputDto.input_date = new Date();
-    const createdResumeHistory = new this.resumeHistoryModel(resumeInputDto);
-    return createdResumeHistory.save();
+    try {
+      const createdResumeHistory = new this.resumeHistoryModel(
+        newResumeHistory,
+      );
+      return createdResumeHistory.save();
+    } catch (err) {
+      return err;
+    }
   }
 }
