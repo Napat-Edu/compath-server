@@ -24,7 +24,7 @@ export class CareerPredictionService {
     private careerPathDataModel: Model<CareerPathData>,
     @InjectModel(ResumeHistory.name)
     private resumeHistoryModel: Model<ResumeHistory>,
-  ) {}
+  ) { }
 
   async createCareerPrediction(userResumeInput: IUserResumeInput) {
     const careerPath = await this.predictCareerPath(

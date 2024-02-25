@@ -10,15 +10,17 @@ import {
   ResumeHistory,
   ResumeHistorySchema,
 } from 'src/schemas/resume-history.schema';
+import { SkillData, SkillDataSchema } from 'src/schemas/skill-data.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ResumeHistory.name, schema: ResumeHistorySchema },
       { name: CareerPathData.name, schema: CareerPathDataSchema },
+      { name: SkillData.name, schema: SkillDataSchema }
     ]),
   ],
   controllers: [CareerInsightController],
   providers: [CareerInsightService],
 })
-export class CareerInsightModule {}
+export class CareerInsightModule { }

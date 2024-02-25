@@ -22,11 +22,13 @@ export interface ISkill {
 
 export interface ICareerPathClassify extends ICareerPathBaseData {
   related_careers: ICareerDomainClassify[];
+  careermate_count: number;
 }
 
 export interface ICareerDomainClassify {
   career: string;
   skill_domains: ISkillClassify[];
+  alt_skills: ISkillBase[];
 }
 
 export interface ISkillClassify {
@@ -35,8 +37,10 @@ export interface ISkillClassify {
   skill_list: ISkillType[];
 }
 
-export interface ISkillType {
-  name: string[];
+export interface ISkillType extends ISkillBase {
   isExisInResume: boolean;
-  isExistInDatabase: boolean;
+}
+
+export interface ISkillBase {
+  name: string[];
 }

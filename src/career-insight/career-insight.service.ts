@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { SkillDataDto } from 'src/dtos/skill-data.dto';
 import {
   ICareerPathClassify,
   ICareerPathWithSkill,
@@ -8,6 +9,7 @@ import {
 } from 'src/interfaces/career-insight.interface';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
+import { SkillData } from 'src/schemas/skill-data.schema';
 
 @Injectable()
 export class CareerInsightService {
@@ -16,9 +18,12 @@ export class CareerInsightService {
     private resumeHistoryModel: Model<ResumeHistory>,
     @InjectModel(CareerPathData.name)
     private careerPathDataModel: Model<CareerPathData>,
-  ) {}
+    @InjectModel(SkillData.name)
+    private skillDataModel: Model<SkillData>
+  ) { }
 
   async getCareerInsight(careerPath: string, objectId: string) {
+    const skillDatas: SkillDataDto[] = await this.skillDataModel.find().exec();
     const careerPathData: ICareerPathWithSkill =
       await this.getCareerPathDataWithSkill(careerPath);
     const userResumeHistory = await this.resumeHistoryModel
@@ -35,24 +40,46 @@ export class CareerInsightService {
             return {
               ...domain,
               skill_list: domain.skill_list.map((skill): ISkillType => {
-                return this.classifySkill(skill, userResume.skill);
+                return this.classifyCoreSkill(skill, userResume.skill);
               }),
             };
           }),
+          alt_skills: this.classifyAlternativeSkill(skillDatas, userResume.skill),
         };
       }),
+      careermate_count: 0
     };
 
     return classifiedInsightData;
   }
 
-  classifySkill(skills: string[], userSkill: string) {
-    const isExisInResume = skills.some((skill) => userSkill.includes(skill));
+  classifyCoreSkill(skills: string[], userSkill: string) {
+    const splittedUserSkill = this.splitUserSkill(userSkill);
+    const isExisInResume = skills.some((skill) => splittedUserSkill.some((splitUserSkill) => splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase()));
     return {
       name: skills,
-      isExisInResume: isExisInResume,
-      isExistInDatabase: false,
+      isExisInResume: isExisInResume
     };
+  }
+
+  classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
+    const splittedUserSkill = this.splitUserSkill(userSkill);
+    const classifiedSkill = skillDatas.map((skillData) => {
+      if (skillData.name.some((skill) => splittedUserSkill.some((splitUserSkill) => splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase()))) {
+        return { name: skillData.name };
+      } else {
+        return { name: [] };
+      }
+    });
+    const filteredSkill = classifiedSkill.filter((skill) => skill.name.length > 0);
+    return filteredSkill;
+  }
+
+  splitUserSkill(userSkill: string) {
+    const userSkillWithLineBreak = userSkill.replace(/[,\/]/g, '\n').replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`);
+    const splittedUserSkill = userSkillWithLineBreak.split('\n');
+    const trimmedUserSkill = splittedUserSkill.map((userSkill) => userSkill.trim());
+    return trimmedUserSkill;
   }
 
   async getCareerPathDataWithSkill(careerPath: string) {
