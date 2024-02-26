@@ -19,8 +19,8 @@ export class CareerInsightService {
     @InjectModel(CareerPathData.name)
     private careerPathDataModel: Model<CareerPathData>,
     @InjectModel(SkillData.name)
-    private skillDataModel: Model<SkillData>
-  ) { }
+    private skillDataModel: Model<SkillData>,
+  ) {}
 
   async getCareerInsight(careerPath: string, objectId: string) {
     const skillDatas: SkillDataDto[] = await this.skillDataModel.find().exec();
@@ -44,42 +44,85 @@ export class CareerInsightService {
               }),
             };
           }),
-          alt_skills: this.classifyAlternativeSkill(skillDatas, userResume.skill),
+          alt_skills: this.classifyAlternativeSkill(
+            skillDatas,
+            userResume.skill,
+          ),
         };
       }),
-      careermate_count: 0
+      careermate_count: 0,
     };
 
-    return classifiedInsightData;
+    const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
+
+    return uniqueInsightData;
   }
 
   classifyCoreSkill(skills: string[], userSkill: string) {
     const splittedUserSkill = this.splitUserSkill(userSkill);
-    const isExisInResume = skills.some((skill) => splittedUserSkill.some((splitUserSkill) => splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase()));
+    const isExisInResume = skills.some((skill) =>
+      splittedUserSkill.some(
+        (splitUserSkill) =>
+          splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
+      ),
+    );
     return {
       name: skills,
-      isExisInResume: isExisInResume
+      isExisInResume: isExisInResume,
     };
   }
 
   classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
     const splittedUserSkill = this.splitUserSkill(userSkill);
     const classifiedSkill = skillDatas.map((skillData) => {
-      if (skillData.name.some((skill) => splittedUserSkill.some((splitUserSkill) => splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase()))) {
+      if (
+        skillData.name.some((skill) =>
+          splittedUserSkill.some(
+            (splitUserSkill) =>
+              splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
+          ),
+        )
+      ) {
         return { name: skillData.name };
       } else {
         return { name: [] };
       }
     });
-    const filteredSkill = classifiedSkill.filter((skill) => skill.name.length > 0);
+    const filteredSkill = classifiedSkill.filter(
+      (skill) => skill.name.length > 0,
+    );
     return filteredSkill;
   }
 
   splitUserSkill(userSkill: string) {
-    const userSkillWithLineBreak = userSkill.replace(/[,\/]/g, '\n').replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`);
+    const userSkillWithLineBreak = userSkill
+      .replace(/[,\/]/g, '\n')
+      .replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`);
     const splittedUserSkill = userSkillWithLineBreak.split('\n');
-    const trimmedUserSkill = splittedUserSkill.map((userSkill) => userSkill.trim());
+    const trimmedUserSkill = splittedUserSkill.map((userSkill) =>
+      userSkill.trim(),
+    );
     return trimmedUserSkill;
+  }
+
+  removeDuplicateSkill(data: ICareerPathClassify) {
+    const uniqedData: ICareerPathClassify = {
+      ...data,
+      related_careers: data.related_careers.map((career) => {
+        const currentCareerDomain = career.skill_domains;
+        return {
+          ...career,
+          alt_skills: career.alt_skills.filter((altSkill) => {
+            return !currentCareerDomain.some((domain) => {
+              return domain.skill_list.some((skill) => {
+                return skill.name.join('') == altSkill.name.join('');
+              });
+            });
+          }),
+        };
+      }),
+    };
+    return uniqedData;
   }
 
   async getCareerPathDataWithSkill(careerPath: string) {
