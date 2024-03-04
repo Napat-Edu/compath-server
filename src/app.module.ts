@@ -10,6 +10,7 @@ import { AppService } from './app.service';
 import { CareerPredictionModule } from './career-prediction/career-prediction.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CareerInsightModule } from './career-insight/career-insight.module';
+import { CareerPathModule } from './career-path/career-path.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CareerInsightModule } from './career-insight/career-insight.module';
     }),
     CareerPredictionModule,
     CareerInsightModule,
+    CareerPathModule,
   ],
   controllers: [AppController],
   providers: [AppService],
