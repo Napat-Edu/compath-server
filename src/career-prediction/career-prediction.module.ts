@@ -11,6 +11,7 @@ import {
   CareerPathData,
   CareerPathDataSchema,
 } from 'src/schemas/career-path-data.schema';
+import { AppService } from 'src/app.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import {
     HttpModule,
   ],
   controllers: [CareerPredictionController],
-  providers: [CareerPredictionService],
+  providers: [CareerPredictionService, AppService],
 })
 export class CareerPredictionModule {}

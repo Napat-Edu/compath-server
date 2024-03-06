@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
+import { AppService } from 'src/app.service';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
 import { ResumeHistoryDto } from 'src/dtos/resume-input.dto';
 import {
@@ -24,7 +25,8 @@ export class CareerPredictionService {
     private careerPathDataModel: Model<CareerPathData>,
     @InjectModel(ResumeHistory.name)
     private resumeHistoryModel: Model<ResumeHistory>,
-  ) { }
+    private appService: AppService,
+  ) {}
 
   async createCareerPrediction(userResumeInput: IUserResumeInput) {
     const careerPath = await this.predictCareerPath(
@@ -42,11 +44,13 @@ export class CareerPredictionService {
     const createdResumeHistory: ResumeHistoryDto =
       await this.createNewResumeHistory(newResumeHistory);
 
+    const careermate_count = await this.appService.countCareermate(careerPath);
+
     const result: IResumePredictionResult = {
       ...careerPathInfo,
       input_date: createdResumeHistory.input_date,
       object_id: createdResumeHistory._id,
-      careermate_count: 0,
+      careermate_count: careermate_count,
     };
 
     return result;

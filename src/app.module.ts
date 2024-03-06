@@ -11,6 +11,10 @@ import { CareerPredictionModule } from './career-prediction/career-prediction.mo
 import { MongooseModule } from '@nestjs/mongoose';
 import { CareerInsightModule } from './career-insight/career-insight.module';
 import { CareerPathModule } from './career-path/career-path.module';
+import {
+  ResumeHistory,
+  ResumeHistorySchema,
+} from './schemas/resume-history.schema';
 
 @Module({
   imports: [
@@ -18,6 +22,9 @@ import { CareerPathModule } from './career-path/career-path.module';
     MongooseModule.forRoot(process.env.MONGODB_URL, {
       dbName: process.env.DB_NAME,
     }),
+    MongooseModule.forFeature([
+      { name: ResumeHistory.name, schema: ResumeHistorySchema },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -27,5 +34,6 @@ import { CareerPathModule } from './career-path/career-path.module';
   ],
   controllers: [AppController],
   providers: [AppService],
+  exports: [AppService],
 })
 export class AppModule {}

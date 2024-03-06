@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { AppService } from 'src/app.service';
 import { SkillDataDto } from 'src/dtos/skill-data.dto';
 import {
   ICareerPathClassify,
@@ -20,6 +21,7 @@ export class CareerInsightService {
     private careerPathDataModel: Model<CareerPathData>,
     @InjectModel(SkillData.name)
     private skillDataModel: Model<SkillData>,
+    private appService: AppService,
   ) {}
 
   async getCareerInsight(careerPath: string, objectId: string) {
@@ -31,26 +33,27 @@ export class CareerInsightService {
       .exec();
     const userResume = userResumeHistory.resume_input;
 
+    const careermate_count = await this.appService.countCareermate(careerPath);
+
+    const mappedRelatedCareer = careerPathData.related_careers.map((career) => {
+      return {
+        ...career,
+        skill_domains: career.skill_domains.map((domain) => {
+          return {
+            ...domain,
+            skill_list: domain.skill_list.map((skill): ISkillType => {
+              return this.classifyCoreSkill(skill, userResume.skill);
+            }),
+          };
+        }),
+        alt_skills: this.classifyAlternativeSkill(skillDatas, userResume.skill),
+      };
+    });
+
     const classifiedInsightData: ICareerPathClassify = {
       ...careerPathData,
-      related_careers: careerPathData.related_careers.map((career) => {
-        return {
-          ...career,
-          skill_domains: career.skill_domains.map((domain) => {
-            return {
-              ...domain,
-              skill_list: domain.skill_list.map((skill): ISkillType => {
-                return this.classifyCoreSkill(skill, userResume.skill);
-              }),
-            };
-          }),
-          alt_skills: this.classifyAlternativeSkill(
-            skillDatas,
-            userResume.skill,
-          ),
-        };
-      }),
-      careermate_count: 0,
+      related_careers: mappedRelatedCareer,
+      careermate_count: careermate_count,
     };
 
     const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
