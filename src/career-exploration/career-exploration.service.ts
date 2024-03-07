@@ -4,13 +4,13 @@ import { Model } from 'mongoose';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 
 @Injectable()
-export class CareerPathService {
+export class CareerExplorationService {
   constructor(
     @InjectModel(CareerPathData.name)
     private careerPathDataModel: Model<CareerPathData>,
   ) {}
 
-  async getCareerPathData() {
+  async getCareerExplorationData() {
     const careerPathData = await this.careerPathDataModel.aggregate([
       {
         $unwind: '$related_careers',
@@ -22,6 +22,17 @@ export class CareerPathService {
           foreignField: 'id',
           as: 'career_domains',
         },
+      },
+      {
+        $lookup: {
+          from: 'skilldatas',
+          localField: 'related_careers.soft_skills',
+          foreignField: 'id',
+          as: 'career_soft_skills',
+        },
+      },
+      {
+        $unwind: '$career_soft_skills',
       },
       {
         $unwind: '$career_domains',
@@ -41,7 +52,6 @@ export class CareerPathService {
             career_path_name: '$career_path_name',
             career_path_description: '$career_path_description',
             base_salary: '$base_salary',
-            icon_svg: '$icon_svg',
             career: '$related_careers.career',
           },
           skill_domains: {
@@ -50,6 +60,12 @@ export class CareerPathService {
               name: '$career_domains.name',
               skill_list: '$skill_data.name',
               is_in_resume: '$career_domains.is_in_resume',
+            },
+          },
+          soft_skills: {
+            $addToSet: {
+              id: '$career_soft_skills.id',
+              name: '$career_soft_skills.name',
             },
           },
         },
@@ -62,10 +78,10 @@ export class CareerPathService {
             $first: '$_id.career_path_description',
           },
           base_salary: { $first: '$_id.base_salary' },
-          icon_svg: { $first: '$_id.icon_svg' },
           related_careers: {
             $push: {
               career: '$_id.career',
+              soft_skills: '$soft_skills',
               skill_domains: '$skill_domains',
             },
           },
@@ -78,7 +94,6 @@ export class CareerPathService {
           career_path_description: 1,
           related_careers: 1,
           base_salary: 1,
-          icon_svg: 1,
         },
       },
     ]);

@@ -10,7 +10,7 @@ import { AppService } from './app.service';
 import { CareerPredictionModule } from './career-prediction/career-prediction.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CareerInsightModule } from './career-insight/career-insight.module';
-import { CareerPathModule } from './career-path/career-path.module';
+import { CareerExplorationModule } from './career-exploration/career-exploration.module';
 import {
   ResumeHistory,
   ResumeHistorySchema,
@@ -30,7 +30,7 @@ import {
     }),
     CareerPredictionModule,
     CareerInsightModule,
-    CareerPathModule,
+    CareerExplorationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

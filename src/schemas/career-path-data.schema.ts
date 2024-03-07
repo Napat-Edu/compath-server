@@ -16,9 +16,6 @@ export class CareerPathData {
 
   @Prop({ type: Object })
   base_salary: ISalary;
-
-  @Prop()
-  icon_svg: string;
 }
 
 export const CareerPathDataSchema =

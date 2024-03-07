@@ -166,7 +166,6 @@ export class CareerInsightService {
                 career_path_name: '$career_path_name',
                 career_path_description: '$career_path_description',
                 base_salary: '$base_salary',
-                icon_svg: '$icon_svg',
                 career: '$related_careers.career',
               },
               skill_domains: {
@@ -187,7 +186,6 @@ export class CareerInsightService {
                 $first: '$_id.career_path_description',
               },
               base_salary: { $first: '$_id.base_salary' },
-              icon_svg: { $first: '$_id.icon_svg' },
               related_careers: {
                 $push: {
                   career: '$_id.career',
@@ -203,7 +201,6 @@ export class CareerInsightService {
               career_path_description: 1,
               related_careers: 1,
               base_salary: 1,
-              icon_svg: 1,
             },
           },
         ])

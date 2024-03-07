@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CareerPathController } from './career-path.controller';
-import { CareerPathService } from './career-path.service';
+import { CareerExplorationController } from './career-exploration.controller';
+import { CareerExplorationService as CareerExplorationService } from './career-exploration.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   CareerPathData,
@@ -13,7 +13,7 @@ import {
       { name: CareerPathData.name, schema: CareerPathDataSchema },
     ]),
   ],
-  controllers: [CareerPathController],
-  providers: [CareerPathService],
+  controllers: [CareerExplorationController],
+  providers: [CareerExplorationService],
 })
-export class CareerPathModule {}
+export class CareerExplorationModule {}
