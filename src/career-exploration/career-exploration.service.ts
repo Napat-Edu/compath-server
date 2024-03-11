@@ -55,7 +55,7 @@ export class CareerExplorationService {
             career: '$related_careers.career',
           },
           skill_domains: {
-            $push: {
+            $addToSet: {
               id: '$career_domains.id',
               name: '$career_domains.name',
               skill_list: '$skill_data.name',
