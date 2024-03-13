@@ -6,13 +6,13 @@ on:
       - main
 
 env:
-  PROJECT_ID: "${{ secrets.GCP_PROJECT_ID }}"
+  PROJECT_ID: '${{ secrets.GCP_PROJECT_ID }}'
 
 jobs:
   deploy:
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     runs-on: ubuntu-latest
     steps:
@@ -21,27 +21,27 @@ jobs:
 
       - name: Google Auth
         id: auth
-        uses: "google-github-actions/auth@v1"
+        uses: 'google-github-actions/auth@v1'
         with:
-          workload_identity_provider: "${{ secrets.WIF_PROVIDER }}"
-          service_account: "${{ secrets.WIF_SERVICE_ACCOUNT }}"
+          workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
+          service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}'
 
       - name: Login Docker
-        run: gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-west2-docker.pkg.dev
+        run: gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://asia-southeast1-docker.pkg.dev
 
       - name: Build Docker Image
-        run: docker build -t us-west2-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test .
+        run: docker build -t asia-southeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test .
 
       - name: Push Image to Artifact Registry
-        run: docker push us-west2-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test
+        run: docker push asia-southeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test
 
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v1
         with:
           service: compath-server-test
-          region: us-west2
-          image: us-west2-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test
+          region: asia-southeast1
+          image: asia-southeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/compath-server-test
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
