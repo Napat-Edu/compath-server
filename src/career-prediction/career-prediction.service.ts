@@ -4,11 +4,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
+import { AppService } from 'src/app.service';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
-import { ResumeInputDto } from 'src/dtos/resume-input.dto';
+import { ResumeHistoryDto } from 'src/dtos/resume-input.dto';
 import {
-  ICareerPredictionResult,
-  IUserResume,
+  IResumePredictionResult,
+  IUserResumeInfo,
+  IUserResumeInput,
 } from 'src/interfaces/career-prediction.interface';
 import { CareerPathData } from 'src/schemas/career-path-data.schema';
 import { ResumeHistory } from 'src/schemas/resume-history.schema';
@@ -19,67 +21,67 @@ export class CareerPredictionService {
 
   constructor(
     private readonly httpService: HttpService,
-    @InjectModel(ResumeHistory.name)
-    private resumeHistoryModel: Model<ResumeHistory>,
     @InjectModel(CareerPathData.name)
     private careerPathDataModel: Model<CareerPathData>,
+    @InjectModel(ResumeHistory.name)
+    private resumeHistoryModel: Model<ResumeHistory>,
+    private appService: AppService,
   ) {}
 
-  async createCareerPredictionResult(
-    userResumeInput: ResumeInputDto,
-  ): Promise<ICareerPredictionResult> {
-    const predictionCareer = await this.getCareerPrediction(
+  async createCareerPrediction(userResumeInput: IUserResumeInput) {
+    const careerPath = await this.predictCareerPath(
       userResumeInput.resume_input,
     );
 
-    let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
-      .findOne({
-        career_path_name: predictionCareer,
-      })
-      .exec();
+    const careerPathInfo = await this.findCareerPathInfo(careerPath);
 
-    if (!careerPathInfo) {
-      const careerUnkownData: CareerPathDataDto = {
-        career_path_name: 'Unknown',
-        career_path_description: 'server may cause some errors',
-        related_careers: ['none'],
-        base_salary: {
-          min_salary: 0,
-          max_salary: 0,
-        },
-        icon_svg: `
-        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
-        <path d="M18.5 16L22.5 12L18.5 8" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M6.5 8L2.5 12L6.5 16" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 4L10 20" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`,
-      };
-      careerPathInfo = careerUnkownData;
-    }
-
-    const result: ICareerPredictionResult = {
-      career: careerPathInfo.career_path_name,
-      description: careerPathInfo.career_path_description,
-      relatedCareers: careerPathInfo.related_careers,
-      baseSalary: careerPathInfo.base_salary,
-      careermatesCount: 0,
-      icon: careerPathInfo.icon_svg,
-    };
-
-    const resumeHistory: ResumeInputDto = {
-      resume_owner: userResumeInput.resume_owner ?? 'anonymous',
+    const newResumeHistory: ResumeHistoryDto = {
+      resume_owner: userResumeInput.resume_owner,
       resume_input: userResumeInput.resume_input,
-      input_date: undefined,
-      prediction_result: result.career,
+      input_date: new Date(),
+      prediction_result: careerPathInfo.career_path_name,
     };
-    this.createCareerPredictionHistory(resumeHistory);
+    const createdResumeHistory: ResumeHistoryDto =
+      await this.createNewResumeHistory(newResumeHistory);
+
+    const careermate_count = await this.appService.countCareermate(careerPath);
+
+    const result: IResumePredictionResult = {
+      ...careerPathInfo,
+      input_date: createdResumeHistory.input_date,
+      object_id: createdResumeHistory._id,
+      careermate_count: careermate_count,
+    };
 
     return result;
   }
 
-  async getCareerPrediction(data: IUserResume) {
+  async findCareerPathInfo(careerPath: string) {
+    try {
+      let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
+        .findOne({
+          career_path_name: careerPath,
+        })
+        .exec();
+
+      if (!careerPathInfo) {
+        careerPathInfo = await this.careerPathDataModel
+          .findOne({
+            career_path_name: 'Unknown',
+          })
+          .exec();
+      }
+      const jsonCareerPathInfo = JSON.stringify(careerPathInfo);
+      const parsedCareerPathInfo = JSON.parse(jsonCareerPathInfo);
+      return parsedCareerPathInfo;
+    } catch (err) {
+      return err;
+    }
+  }
+
+  async predictCareerPath(resume: IUserResumeInfo) {
     const predictionResult = await firstValueFrom(
-      this.httpService.post(process.env.MODEL_API, data).pipe(
+      this.httpService.post(process.env.MODEL_API, resume).pipe(
         catchError((err: AxiosError) => {
           this.logger.error(err.response.data);
           throw 'error occured';
@@ -89,11 +91,16 @@ export class CareerPredictionService {
     return predictionResult.data;
   }
 
-  createCareerPredictionHistory(
-    resumeInputDto: ResumeInputDto,
+  createNewResumeHistory(
+    newResumeHistory: ResumeHistoryDto,
   ): Promise<ResumeHistory> {
-    resumeInputDto.input_date = new Date();
-    const createdResumeHistory = new this.resumeHistoryModel(resumeInputDto);
-    return createdResumeHistory.save();
+    try {
+      const createdResumeHistory = new this.resumeHistoryModel(
+        newResumeHistory,
+      );
+      return createdResumeHistory.save();
+    } catch (err) {
+      return err;
+    }
   }
 }

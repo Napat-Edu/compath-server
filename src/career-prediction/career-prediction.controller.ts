@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { CareerPredictionService } from './career-prediction.service';
-import { ResumeInputDto } from 'src/dtos/resume-input.dto';
+import { IUserResumeInput } from 'src/interfaces/career-prediction.interface';
 
 @Controller('/career-prediction')
 export class CareerPredictionController {
@@ -9,21 +9,10 @@ export class CareerPredictionController {
   ) {}
 
   @Post()
-  createCareerPrediction(@Body() userResumeInput: ResumeInputDto) {
+  createCareerPrediction(@Body() userResumeInput: IUserResumeInput) {
     try {
-      return this.careerPredictionService.createCareerPredictionResult(
+      return this.careerPredictionService.createCareerPrediction(
         userResumeInput,
-      );
-    } catch (err) {
-      return err;
-    }
-  }
-
-  @Post('/create/resume-history')
-  createCareerPredictionHistory(@Body() newResumeHistory: ResumeInputDto) {
-    try {
-      return this.careerPredictionService.createCareerPredictionHistory(
-        newResumeHistory,
       );
     } catch (err) {
       return err;

@@ -1,9 +1,20 @@
-import { ISalary } from "src/interfaces/career-prediction.interface";
+export interface CareerPathDataDto extends ICareerPathBaseData {
+  related_careers: CareerDto[];
+}
 
-export interface CareerPathDataDto {
+export interface CareerDto {
+  career: string;
+  skill_domains: string[];
+  soft_skills: string[];
+}
+
+export interface ICareerPathBaseData {
   career_path_name: string;
   career_path_description: string;
-  related_careers: string[];
   base_salary: ISalary;
-  icon_svg: string;
+}
+
+export interface ISalary {
+  min_salary: number;
+  max_salary: number;
 }
