@@ -15,6 +15,7 @@ import {
   ResumeHistory,
   ResumeHistorySchema,
 } from './schemas/resume-history.schema';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import {
     CareerPredictionModule,
     CareerInsightModule,
     CareerExplorationModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
