@@ -57,8 +57,14 @@ export class CareerInsightService {
     };
 
     const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
+    const sortedInsightData = {
+      ...uniqueInsightData,
+      related_careers: uniqueInsightData.related_careers.sort((a, b) =>
+        a.career.localeCompare(b.career),
+      ),
+    };
 
-    return uniqueInsightData;
+    return sortedInsightData;
   }
 
   classifyCoreSkill(skills: string[], userSkill: string) {
