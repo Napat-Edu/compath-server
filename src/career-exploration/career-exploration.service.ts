@@ -98,6 +98,37 @@ export class CareerExplorationService {
       },
     ]);
 
-    return careerPathData;
+    const sortedCareerPathData = careerPathData
+      .sort((a, b) => a.career_path_name.localeCompare(b.career_path_name))
+      .map((careerPath) => {
+        const sortedCareerPath = careerPath.related_careers.sort((a, b) =>
+          a.career.localeCompare(b.career),
+        );
+        return {
+          ...careerPath,
+          related_careers: sortedCareerPath.map((career) => {
+            const sortedSkillDomain = career.skill_domains.sort((a, b) =>
+              a.id.localeCompare(b.id),
+            );
+            const mappedSkillDomain = sortedSkillDomain.map((domain) => {
+              return {
+                ...domain,
+                skill_list: domain.skill_list.sort((a, b) =>
+                  a[0].localeCompare(b[0]),
+                ),
+              };
+            });
+            return {
+              ...career,
+              soft_skills: career.soft_skills.sort((a, b) =>
+                a.id.localeCompare(b.id),
+              ),
+              skill_domains: mappedSkillDomain,
+            };
+          }),
+        };
+      });
+
+    return sortedCareerPathData;
   }
 }
