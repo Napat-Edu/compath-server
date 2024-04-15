@@ -11,6 +11,16 @@ export class AuthService {
     private userModel: Model<UserDocument>,
   ) {}
 
+  async login(details: UserDto) {
+    const user = await this.userModel.findOne({ email: details.email });
+    if (user) {
+      return user;
+    } else {
+      const newUser = new this.userModel(details);
+      return newUser.save();
+    }
+  }
+
   async validateUser(details: UserDto, picture: string) {
     const user = await this.userModel.findOne({ email: details.email });
     if (user) {
