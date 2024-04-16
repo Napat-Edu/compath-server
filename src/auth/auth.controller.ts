@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { GoogleAuthGuard } from './guards/google.guard';
-import { Request } from 'express';
+// import { GoogleAuthGuard } from './guards/google.guard';
+// import { Request } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { AuthService } from './auth.service';
 import { UserDto } from 'src/dtos/user.dto';
@@ -63,16 +63,16 @@ export class AuthController {
     return response;
   }
 
-  @Get('google/redirect')
-  @UseGuards(GoogleAuthGuard)
-  handleRedirect(@Req() request: Request) {
-    return request.user;
-  }
+  // @Get('google/redirect')
+  // @UseGuards(GoogleAuthGuard)
+  // handleRedirect(@Req() request: Request) {
+  //   return request.user;
+  // }
 
-  @Get('status')
-  user(@Req() request: Request) {
-    return request.user
-      ? { msg: 'Authenticated' }
-      : { msg: 'Not Authenticated' };
-  }
+  // @Get('status')
+  // user(@Req() request: Request) {
+  //   return request.user
+  //     ? { msg: 'Authenticated' }
+  //     : { msg: 'Not Authenticated' };
+  // }
 }
