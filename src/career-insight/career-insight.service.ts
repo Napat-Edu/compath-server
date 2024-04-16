@@ -218,4 +218,22 @@ export class CareerInsightService {
       return error;
     }
   }
+
+  async getPredictionHistory(email: string) {
+    const histories = await this.resumeHistoryModel
+      .find({
+        resume_owner: email,
+      })
+      .exec();
+    return histories;
+  }
+
+  async deletePredictionHistory(id: string) {
+    const result = await this.resumeHistoryModel.deleteOne({ _id: id });
+    if (result.acknowledged) {
+      return { msg: 'delete successful' };
+    } else {
+      return { msg: 'error occured' };
+    }
+  }
 }
