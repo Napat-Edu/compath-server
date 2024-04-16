@@ -15,6 +15,8 @@ import {
   ResumeHistory,
   ResumeHistorySchema,
 } from './schemas/resume-history.schema';
+import { AuthModule } from './auth/auth.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import {
     CareerPredictionModule,
     CareerInsightModule,
     CareerExplorationModule,
+    AuthModule,
+    PassportModule.register({ session: true }),
   ],
   controllers: [AppController],
   providers: [AppService],
