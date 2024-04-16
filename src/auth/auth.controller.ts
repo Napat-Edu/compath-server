@@ -12,14 +12,14 @@ const client = new OAuth2Client(
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('google/login')
   // @UseGuards(GoogleAuthGuard)
   async handleLogin(@Body('code') code: string) {
     const client_id = process.env.CLIENT_ID;
     const client_secret = process.env.CLIENT_SECRET;
-    const redirect_uri = 'http://localhost:3000';
+    const redirect_uri = process.env.BASE_CLIENT;
     const grant_type = 'authorization_code';
 
     const credential = await fetch('https://oauth2.googleapis.com/token', {
@@ -35,8 +35,8 @@ export class AuthController {
         grant_type,
       }),
     })
-      .then(response => response.json())
-      .catch(error => {
+      .then((response) => response.json())
+      .catch((error) => {
         console.log(error);
 
         return { error: error };
