@@ -1,24 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
-// import { GoogleStrategy } from './strategies/google.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { AuthService } from './auth.service';
-// import { SessionSerializer } from './serializer/Serializer';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    HttpModule,
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    // GoogleStrategy,
-    // SessionSerializer,
-    {
-      provide: 'AUTH_SERVICE',
-      useClass: AuthService,
-    },
-  ],
+  providers: [AuthService],
 })
 export class AuthModule {}
