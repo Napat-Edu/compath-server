@@ -8,21 +8,16 @@ export class CareerController {
   constructor(private readonly careerService: CareerService) {}
 
   @Get()
-  getAllCareerData() {
+  getCareerData(@Query() query: ICareerInsightRequest) {
     try {
-      return this.careerService.getAllCareerData();
-    } catch (err) {
-      return err;
-    }
-  }
-
-  @Get('insight')
-  getCareerInsight(@Query() query: ICareerInsightRequest) {
-    try {
-      return this.careerService.getCareerInsight(
-        query.career_path,
-        query.object_id,
-      );
+      if (!query.career_path || !query.object_id) {
+        return this.careerService.getAllCareerData();
+      } else {
+        return this.careerService.getCareerInsight(
+          query.career_path,
+          query.object_id,
+        );
+      }
     } catch (err) {
       return err;
     }

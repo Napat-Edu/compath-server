@@ -125,46 +125,60 @@ export class CareerService {
   }
 
   async getCareerInsight(careerPath: string, objectId: string) {
-    const skillDatas: SkillDataDto[] = await this.skillDataModel.find().exec();
-    const careerPathData: ICareerPathWithSkill =
-      await this.getCareerPathDataWithSkill(careerPath);
-    const userResumeHistory = await this.resumeHistoryModel
-      .findById(objectId)
-      .exec();
-    const userResume = userResumeHistory.resume_input;
+    try {
+      const skillDatas: SkillDataDto[] = await this.skillDataModel
+        .find()
+        .exec();
+      const careerPathData: ICareerPathWithSkill =
+        await this.getCareerPathDataWithSkill(careerPath);
+      const userResumeHistory = await this.resumeHistoryModel
+        .findById(objectId)
+        .exec();
+      const userResume = userResumeHistory.resume_input;
 
-    const careermate_count = await this.appService.countCareermate(careerPath);
+      const careermate_count =
+        await this.appService.countCareermate(careerPath);
 
-    const mappedRelatedCareer = careerPathData.related_careers.map((career) => {
-      return {
-        ...career,
-        skill_domains: career.skill_domains.map((domain) => {
+      const mappedRelatedCareer = careerPathData.related_careers.map(
+        (career) => {
           return {
-            ...domain,
-            skill_list: domain.skill_list.map((skill): ISkillType => {
-              return this.classifyCoreSkill(skill, userResume.skill);
+            ...career,
+            skill_domains: career.skill_domains.map((domain) => {
+              return {
+                ...domain,
+                skill_list: domain.skill_list.map((skill): ISkillType => {
+                  return this.classifyCoreSkill(skill, userResume.skill);
+                }),
+              };
             }),
+            alt_skills: this.classifyAlternativeSkill(
+              skillDatas,
+              userResume.skill,
+            ),
           };
-        }),
-        alt_skills: this.classifyAlternativeSkill(skillDatas, userResume.skill),
+        },
+      );
+
+      const classifiedInsightData: ICareerPathClassify = {
+        ...careerPathData,
+        related_careers: mappedRelatedCareer,
+        careermate_count: careermate_count,
       };
-    });
 
-    const classifiedInsightData: ICareerPathClassify = {
-      ...careerPathData,
-      related_careers: mappedRelatedCareer,
-      careermate_count: careermate_count,
-    };
+      const uniqueInsightData = this.removeDuplicateSkill(
+        classifiedInsightData,
+      );
+      const sortedInsightData = {
+        ...uniqueInsightData,
+        related_careers: uniqueInsightData.related_careers.sort((a, b) =>
+          a.career.localeCompare(b.career),
+        ),
+      };
 
-    const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
-    const sortedInsightData = {
-      ...uniqueInsightData,
-      related_careers: uniqueInsightData.related_careers.sort((a, b) =>
-        a.career.localeCompare(b.career),
-      ),
-    };
-
-    return sortedInsightData;
+      return sortedInsightData;
+    } catch (error) {
+      return { msg: "can't find this specific object, invalid object_id" };
+    }
   }
 
   classifyCoreSkill(skills: string[], userSkill: string) {
