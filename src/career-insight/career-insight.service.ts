@@ -57,8 +57,14 @@ export class CareerInsightService {
     };
 
     const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
+    const sortedInsightData = {
+      ...uniqueInsightData,
+      related_careers: uniqueInsightData.related_careers.sort((a, b) =>
+        a.career.localeCompare(b.career),
+      ),
+    };
 
-    return uniqueInsightData;
+    return sortedInsightData;
   }
 
   classifyCoreSkill(skills: string[], userSkill: string) {
@@ -210,6 +216,24 @@ export class CareerInsightService {
       return careerPathInfoWithSkill;
     } catch (error) {
       return error;
+    }
+  }
+
+  async getPredictionHistory(email: string) {
+    const histories = await this.resumeHistoryModel
+      .find({
+        resume_owner: email,
+      })
+      .exec();
+    return histories;
+  }
+
+  async deletePredictionHistory(id: string) {
+    const result = await this.resumeHistoryModel.deleteOne({ _id: id });
+    if (result.acknowledged) {
+      return { msg: 'delete successful' };
+    } else {
+      return { msg: 'error occured' };
     }
   }
 }
