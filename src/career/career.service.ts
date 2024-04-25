@@ -5,9 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
-import { AppService } from 'src/app.service';
-import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
-import { ResumeHistoryDto } from 'src/dtos/resume-input.dto';
+import { AppService, DatabaseService } from 'src/app.service';
 import { SkillDataDto } from 'src/dtos/skill-data.dto';
 import {
   ICareerPathClassify,
@@ -36,22 +34,19 @@ export class CareerService {
     @InjectModel(SkillData.name)
     private skillDataModel: Model<SkillData>,
     private appService: AppService,
+    private databaseService: DatabaseService,
   ) {}
 
   async createCareerPrediction(userResumeInput: IUserResumeInput) {
-    const careerPath = await this.classificationCareerPath(
-      userResumeInput.resume_input,
+    const careerPath = await this.classificationCareerPath(userResumeInput.resume_input);
+    const careerPathInfo = await this.databaseService.getCareerPathInfo(careerPath);
+    const createdHistory = await this.databaseService.createNewHistory(
+      userResumeInput.resume_owner, 
+      userResumeInput.resume_input, 
+      careerPathInfo.career_path_name
     );
-    const careerPathInfo = await this.getCareerPathInfo(careerPath);
-    const newHistory: ResumeHistoryDto = {
-      resume_owner: userResumeInput.resume_owner,
-      resume_input: userResumeInput.resume_input,
-      input_date: new Date(),
-      prediction_result: careerPathInfo.career_path_name,
-    };
-    const createdHistory: ResumeHistoryDto =
-      await this.createNewHistory(newHistory);
     const careermate_count = await this.appService.countCareermate(careerPath);
+    
     const result: IResumePredictionResult = {
       ...careerPathInfo,
       input_date: createdHistory.input_date,
@@ -73,71 +68,24 @@ export class CareerService {
     return predictionResult.data;
   }
 
-  async getCareerPathInfo(careerPath: string) {
-    try {
-      let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
-        .findOne({
-          career_path_name: careerPath,
-        })
-        .exec();
-
-      if (!careerPathInfo) {
-        careerPathInfo = await this.careerPathDataModel
-          .findOne({
-            career_path_name: 'Unknown',
-          })
-          .exec();
-      }
-      const jsonCareerPathInfo = JSON.stringify(careerPathInfo);
-      const parsedCareerPathInfo = JSON.parse(jsonCareerPathInfo);
-      return parsedCareerPathInfo;
-    } catch (err) {
-      return err;
-    }
-  }
-
-  async createNewHistory(newResumeHistory: ResumeHistoryDto) {
-    try {
-      const newHistoryModel = new this.resumeHistoryModel(newResumeHistory);
-      const createdHistory = await newHistoryModel.save();
-      return createdHistory;
-    } catch (err) {
-      return err;
-    }
-  }
-
   async getPredictionHistory(email: string) {
-    const histories = await this.resumeHistoryModel
-      .find({
-        resume_owner: email,
-      })
-      .exec();
+    const histories = await this.databaseService.getPredictionHistoriesByEmail(email);
     return histories;
   }
 
   async deletePredictionHistory(id: string) {
-    const result = await this.resumeHistoryModel.deleteOne({ _id: id });
-    if (result.acknowledged) {
-      return { msg: 'delete successful' };
-    } else {
-      return { msg: 'error occured' };
-    }
+    const result = await this.databaseService.deletePredictionHistoryById(id);
+    return result;
   }
 
   async getCareerInsight(careerPath: string, objectId: string) {
     try {
-      const skillDatas: SkillDataDto[] = await this.skillDataModel
-        .find()
-        .exec();
-      const careerPathData: ICareerPathWithSkill =
-        await this.getCareerPathDataWithSkill(careerPath);
-      const userResumeHistory = await this.resumeHistoryModel
-        .findById(objectId)
-        .exec();
-      const userResume = userResumeHistory.resume_input;
+      const skillDatas: SkillDataDto[] = await this.databaseService.getAllSkillData();
+      const careerPathData: ICareerPathWithSkill = await this.databaseService.getCareerPathDataWithSkill(careerPath);
+      const userResumeHistory = await this.databaseService.getPredictionHistoryById(objectId);
 
-      const careermate_count =
-        await this.appService.countCareermate(careerPath);
+      const userResume = userResumeHistory.resume_input;
+      const careermate_count = await this.appService.countCareermate(careerPath);
 
       const mappedRelatedCareer = careerPathData.related_careers.map(
         (career) => {
@@ -248,179 +196,13 @@ export class CareerService {
     return uniqedData;
   }
 
-  async getCareerPathDataWithSkill(careerPath: string) {
-    try {
-      const careerInfo: ICareerPathWithSkill = await this.careerPathDataModel
-        .aggregate([
-          {
-            $match: {
-              career_path_name: careerPath,
-            },
-          },
-          {
-            $unwind: '$related_careers',
-          },
-          {
-            $lookup: {
-              from: 'skilldomains',
-              localField: 'related_careers.skill_domains',
-              foreignField: 'id',
-              as: 'career_domains',
-            },
-          },
-          {
-            $unwind: '$career_domains',
-          },
-          {
-            $lookup: {
-              from: 'skilldatas',
-              localField: 'career_domains.skill_list',
-              foreignField: 'id',
-              as: 'skill_data',
-            },
-          },
-          {
-            $group: {
-              _id: {
-                career_path_id: '$_id',
-                career_path_name: '$career_path_name',
-                career_path_description: '$career_path_description',
-                base_salary: '$base_salary',
-                career: '$related_careers.career',
-              },
-              skill_domains: {
-                $push: {
-                  id: '$career_domains.id',
-                  name: '$career_domains.name',
-                  skill_list: '$skill_data.name',
-                  is_in_resume: '$career_domains.is_in_resume',
-                },
-              },
-            },
-          },
-          {
-            $group: {
-              _id: '$_id.career_path_id',
-              career_path_name: { $first: '$_id.career_path_name' },
-              career_path_description: {
-                $first: '$_id.career_path_description',
-              },
-              base_salary: { $first: '$_id.base_salary' },
-              related_careers: {
-                $push: {
-                  career: '$_id.career',
-                  skill_domains: '$skill_domains',
-                },
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              career_path_name: 1,
-              career_path_description: 1,
-              related_careers: 1,
-              base_salary: 1,
-            },
-          },
-        ])
-        .then((data) => data[0]);
-
-      const careerPathInfoWithSkill: ICareerPathWithSkill = careerInfo;
-      return careerPathInfoWithSkill;
-    } catch (error) {
-      return error;
-    }
+  async getExplorationData() {
+    const careerPathData = await this.databaseService.getAllCareerData();
+    const sortedCareerPathData = this.sortCareerData(careerPathData);
+    return sortedCareerPathData;
   }
 
-  async getAllCareerData() {
-    const careerPathData = await this.careerPathDataModel.aggregate([
-      {
-        $unwind: '$related_careers',
-      },
-      {
-        $lookup: {
-          from: 'skilldomains',
-          localField: 'related_careers.skill_domains',
-          foreignField: 'id',
-          as: 'career_domains',
-        },
-      },
-      {
-        $lookup: {
-          from: 'skilldatas',
-          localField: 'related_careers.soft_skills',
-          foreignField: 'id',
-          as: 'career_soft_skills',
-        },
-      },
-      {
-        $unwind: '$career_soft_skills',
-      },
-      {
-        $unwind: '$career_domains',
-      },
-      {
-        $lookup: {
-          from: 'skilldatas',
-          localField: 'career_domains.skill_list',
-          foreignField: 'id',
-          as: 'skill_data',
-        },
-      },
-      {
-        $group: {
-          _id: {
-            career_path_id: '$_id',
-            career_path_name: '$career_path_name',
-            career_path_description: '$career_path_description',
-            base_salary: '$base_salary',
-            career: '$related_careers.career',
-          },
-          skill_domains: {
-            $addToSet: {
-              id: '$career_domains.id',
-              name: '$career_domains.name',
-              skill_list: '$skill_data.name',
-              is_in_resume: '$career_domains.is_in_resume',
-            },
-          },
-          soft_skills: {
-            $addToSet: {
-              id: '$career_soft_skills.id',
-              name: '$career_soft_skills.name',
-            },
-          },
-        },
-      },
-      {
-        $group: {
-          _id: '$_id.career_path_id',
-          career_path_name: { $first: '$_id.career_path_name' },
-          career_path_description: {
-            $first: '$_id.career_path_description',
-          },
-          base_salary: { $first: '$_id.base_salary' },
-          related_careers: {
-            $push: {
-              career: '$_id.career',
-              soft_skills: '$soft_skills',
-              skill_domains: '$skill_domains',
-            },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          career_path_name: 1,
-          career_path_description: 1,
-          related_careers: 1,
-          base_salary: 1,
-        },
-      },
-    ]);
-
+  sortCareerData(careerPathData) {
     const sortedCareerPathData = careerPathData
       .sort((a, b) => a.career_path_name.localeCompare(b.career_path_name))
       .map((careerPath) => {

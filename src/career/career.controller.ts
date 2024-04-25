@@ -11,7 +11,7 @@ export class CareerController {
   getCareerData(@Query() query: ICareerInsightRequest) {
     try {
       if (!query.career_path || !query.object_id) {
-        return this.careerService.getAllCareerData();
+        return this.careerService.getExplorationData();
       } else {
         return this.careerService.getCareerInsight(
           query.career_path,

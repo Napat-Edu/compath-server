@@ -6,7 +6,7 @@ const ENV_MODULE = ConfigModule.forRoot({
 });
 
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppService, DatabaseService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   ResumeHistory,
@@ -14,6 +14,11 @@ import {
 } from './schemas/resume-history.schema';
 import { AuthModule } from './auth/auth.module';
 import { CareerModule } from './career/career.module';
+import {
+  CareerPathData,
+  CareerPathDataSchema,
+} from './schemas/career-path-data.schema';
+import { SkillData, SkillDataSchema } from './schemas/skill-data.schema';
 
 @Module({
   imports: [
@@ -23,6 +28,8 @@ import { CareerModule } from './career/career.module';
     }),
     MongooseModule.forFeature([
       { name: ResumeHistory.name, schema: ResumeHistorySchema },
+      { name: CareerPathData.name, schema: CareerPathDataSchema },
+      { name: SkillData.name, schema: SkillDataSchema },
     ]),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -31,7 +38,7 @@ import { CareerModule } from './career/career.module';
     CareerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
-  exports: [AppService],
+  providers: [AppService, DatabaseService],
+  exports: [AppService, DatabaseService],
 })
 export class AppModule {}

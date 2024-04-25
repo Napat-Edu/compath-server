@@ -7,7 +7,7 @@ import {
   ResumeHistorySchema,
 } from 'src/schemas/resume-history.schema';
 import { HttpModule } from '@nestjs/axios';
-import { AppService } from 'src/app.service';
+import { AppService, DatabaseService } from 'src/app.service';
 import {
   CareerPathData,
   CareerPathDataSchema,
@@ -24,6 +24,6 @@ import { SkillData, SkillDataSchema } from 'src/schemas/skill-data.schema';
     HttpModule,
   ],
   controllers: [CareerController],
-  providers: [CareerService, AppService],
+  providers: [CareerService, AppService, DatabaseService],
 })
 export class CareerModule {}
