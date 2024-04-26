@@ -1,9 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Logger } from '@nestjs/common';
 import { Injectable } from '@nestjs/common/decorators';
-import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
-import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AppService, DatabaseService } from 'src/app.service';
 import { SkillDataDto } from 'src/dtos/skill-data.dto';
@@ -16,10 +14,7 @@ import {
   IResumePredictionResult,
   IUserResumeInfo,
   IUserResumeInput,
-} from 'src/interfaces/career-prediction.interface';
-import { CareerPathData } from 'src/schemas/career-path-data.schema';
-import { ResumeHistory } from 'src/schemas/resume-history.schema';
-import { SkillData } from 'src/schemas/skill-data.schema';
+} from 'src/interfaces/career-prediction.interface'
 
 @Injectable()
 export class CareerService {
@@ -27,12 +22,6 @@ export class CareerService {
 
   constructor(
     private readonly httpService: HttpService,
-    @InjectModel(ResumeHistory.name)
-    private resumeHistoryModel: Model<ResumeHistory>,
-    @InjectModel(CareerPathData.name)
-    private careerPathDataModel: Model<CareerPathData>,
-    @InjectModel(SkillData.name)
-    private skillDataModel: Model<SkillData>,
     private appService: AppService,
     private databaseService: DatabaseService,
   ) {}
