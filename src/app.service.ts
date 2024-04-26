@@ -8,34 +8,14 @@ import { CareerPathDataDto } from './dtos/career-path-data.dto';
 import { ResumeHistoryDto } from './dtos/resume-input.dto';
 import { IUserResumeInfo } from './interfaces/career-prediction.interface';
 import { SkillDataDto } from './dtos/skill-data.dto';
-import { ICareerPathWithSkill } from './interfaces/career-insight.interface';
+import { ICareerPathClassify, ICareerPathWithSkill } from './interfaces/career-insight.interface';
 
 @Injectable()
 export class AppService {
-  constructor(
-    @InjectModel(ResumeHistory.name)
-    private resumeHistoryModel: Model<ResumeHistory>,
-  ) {}
+  constructor() {}
 
   getHello(): string {
     return `This is ${process.env.MODE} mode`;
-  }
-
-  async countCareermate(careerPath: string): Promise<number> {
-    try {
-      const careermate_count = await this.resumeHistoryModel
-        .countDocuments({
-          prediction_result: careerPath,
-          $and: [
-            { 'resume_input.skill': { $nin: ['-', '.'] } },
-            { 'resume_input.experience': { $nin: ['-', '.'] } },
-          ],
-        })
-        .exec();
-      return careermate_count;
-    } catch (err) {
-      return err;
-    }
   }
 }
 
@@ -295,5 +275,132 @@ export class DatabaseService {
     ]);
 
     return careerPathData;
+  }
+}
+
+@Injectable()
+export class ResumeService {
+  constructor(
+    @InjectModel(ResumeHistory.name)
+    private resumeHistoryModel: Model<ResumeHistory>,
+  ) {}
+
+  async countCareermate(careerPath: string): Promise<number> {
+    try {
+      const careermate_count = await this.resumeHistoryModel
+        .countDocuments({
+          prediction_result: careerPath,
+          $and: [
+            { 'resume_input.skill': { $nin: ['-', '.'] } },
+            { 'resume_input.experience': { $nin: ['-', '.'] } },
+          ],
+        })
+        .exec();
+      return careermate_count;
+    } catch (err) {
+      return err;
+    }
+  }
+
+  sortCareerData(careerPathData) {
+    const sortedCareerPathData = careerPathData
+      .sort((a, b) => a.career_path_name.localeCompare(b.career_path_name))
+      .map((careerPath) => {
+        const sortedCareerPath = careerPath.related_careers.sort((a, b) =>
+          a.career.localeCompare(b.career),
+        );
+        return {
+          ...careerPath,
+          related_careers: sortedCareerPath.map((career) => {
+            const sortedSkillDomain = career.skill_domains.sort((a, b) =>
+              a.id.localeCompare(b.id),
+            );
+            const mappedSkillDomain = sortedSkillDomain.map((domain) => {
+              return {
+                ...domain,
+                skill_list: domain.skill_list.sort((a, b) =>
+                  a[0].localeCompare(b[0]),
+                ),
+              };
+            });
+            return {
+              ...career,
+              soft_skills: career.soft_skills.sort((a, b) =>
+                a.id.localeCompare(b.id),
+              ),
+              skill_domains: mappedSkillDomain,
+            };
+          }),
+        };
+      });
+
+    return sortedCareerPathData;
+  }
+
+  splitUserSkill(userSkill: string) {
+    const userSkillWithLineBreak = userSkill
+      .replace(/[,\/]/g, '\n')
+      .replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`);
+    const splittedUserSkill = userSkillWithLineBreak.split('\n');
+    const trimmedUserSkill = splittedUserSkill.map((userSkill) =>
+      userSkill.trim(),
+    );
+    return trimmedUserSkill;
+  }
+
+  removeDuplicateSkill(data: ICareerPathClassify) {
+    const uniqedData: ICareerPathClassify = {
+      ...data,
+      related_careers: data.related_careers.map((career) => {
+        const currentCareerDomain = career.skill_domains;
+        return {
+          ...career,
+          alt_skills: career.alt_skills.filter((altSkill) => {
+            return !currentCareerDomain.some((domain) => {
+              return domain.skill_list.some((skill) => {
+                return skill.name.join('') == altSkill.name.join('');
+              });
+            });
+          }),
+        };
+      }),
+    };
+    return uniqedData;
+  }
+
+  classifyCoreSkill(skills: string[], userSkill: string) {
+    const splittedUserSkill = this.splitUserSkill(userSkill);
+    const isExisInResume = skills.some((skill) =>
+      splittedUserSkill.some(
+        (splitUserSkill) =>
+          splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
+      ),
+    );
+    return {
+      name: skills,
+      isExisInResume: isExisInResume,
+    };
+  }
+
+  classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
+    const splittedUserSkill = this.splitUserSkill(userSkill);
+    const classifiedSkill = skillDatas.map((skillData) => {
+      if (
+        skillData.name.some((skill) =>
+          splittedUserSkill.some(
+            (splitUserSkill) =>
+              splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
+          ),
+        )
+      ) {
+        return { name: skillData.name };
+      } else {
+        return { name: [] };
+      }
+    });
+    const filteredSkill = classifiedSkill.filter(
+      (skill) => skill.name.length > 0,
+    );
+    return filteredSkill;
   }
 }

@@ -6,7 +6,7 @@ const ENV_MODULE = ConfigModule.forRoot({
 });
 
 import { AppController } from './app.controller';
-import { AppService, DatabaseService } from './app.service';
+import { AppService, DatabaseService, ResumeService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   ResumeHistory,
@@ -38,7 +38,7 @@ import { SkillData, SkillDataSchema } from './schemas/skill-data.schema';
     CareerModule,
   ],
   controllers: [AppController],
-  providers: [AppService, DatabaseService],
-  exports: [AppService, DatabaseService],
+  providers: [AppService, DatabaseService, ResumeService],
+  exports: [AppService, DatabaseService, ResumeService],
 })
 export class AppModule {}

@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Injectable } from '@nestjs/common/decorators';
 import { AxiosError } from 'axios';
 import { catchError, firstValueFrom } from 'rxjs';
-import { AppService, DatabaseService } from 'src/app.service';
+import { DatabaseService, ResumeService } from 'src/app.service';
 import { SkillDataDto } from 'src/dtos/skill-data.dto';
 import {
   ICareerPathClassify,
@@ -14,7 +14,7 @@ import {
   IResumePredictionResult,
   IUserResumeInfo,
   IUserResumeInput,
-} from 'src/interfaces/career-prediction.interface'
+} from 'src/interfaces/career-prediction.interface';
 
 @Injectable()
 export class CareerService {
@@ -22,20 +22,20 @@ export class CareerService {
 
   constructor(
     private readonly httpService: HttpService,
-    private appService: AppService,
     private databaseService: DatabaseService,
+    private resumeService: ResumeService,
   ) {}
 
   async createCareerPrediction(userResumeInput: IUserResumeInput) {
     const careerPath = await this.classificationCareerPath(userResumeInput.resume_input);
     const careerPathInfo = await this.databaseService.getCareerPathInfo(careerPath);
     const createdHistory = await this.databaseService.createNewHistory(
-      userResumeInput.resume_owner, 
-      userResumeInput.resume_input, 
-      careerPathInfo.career_path_name
+      userResumeInput.resume_owner,
+      userResumeInput.resume_input,
+      careerPathInfo.career_path_name,
     );
-    const careermate_count = await this.appService.countCareermate(careerPath);
-    
+    const careermate_count = await this.resumeService.countCareermate(careerPath);
+
     const result: IResumePredictionResult = {
       ...careerPathInfo,
       input_date: createdHistory.input_date,
@@ -57,6 +57,18 @@ export class CareerService {
     return predictionResult.data;
   }
 
+  getCareerData(careerPath: string, objectId: string) {
+    try {
+      if(!careerPath || !objectId) {
+        return this.getExplorationData();
+      } else {
+        return this.getCareerInsight(careerPath, objectId);
+      }
+    } catch (error) {
+      return error;
+    }
+  }
+
   async getPredictionHistory(email: string) {
     const histories = await this.databaseService.getPredictionHistoriesByEmail(email);
     return histories;
@@ -74,7 +86,7 @@ export class CareerService {
       const userResumeHistory = await this.databaseService.getPredictionHistoryById(objectId);
 
       const userResume = userResumeHistory.resume_input;
-      const careermate_count = await this.appService.countCareermate(careerPath);
+      const careermate_count = await this.resumeService.countCareermate(careerPath);
 
       const mappedRelatedCareer = careerPathData.related_careers.map(
         (career) => {
@@ -84,11 +96,11 @@ export class CareerService {
               return {
                 ...domain,
                 skill_list: domain.skill_list.map((skill): ISkillType => {
-                  return this.classifyCoreSkill(skill, userResume.skill);
+                  return this.resumeService.classifyCoreSkill(skill, userResume.skill);
                 }),
               };
             }),
-            alt_skills: this.classifyAlternativeSkill(
+            alt_skills: this.resumeService.classifyAlternativeSkill(
               skillDatas,
               userResume.skill,
             ),
@@ -102,7 +114,7 @@ export class CareerService {
         careermate_count: careermate_count,
       };
 
-      const uniqueInsightData = this.removeDuplicateSkill(
+      const uniqueInsightData = this.resumeService.removeDuplicateSkill(
         classifiedInsightData,
       );
       const sortedInsightData = {
@@ -118,111 +130,9 @@ export class CareerService {
     }
   }
 
-  classifyCoreSkill(skills: string[], userSkill: string) {
-    const splittedUserSkill = this.splitUserSkill(userSkill);
-    const isExisInResume = skills.some((skill) =>
-      splittedUserSkill.some(
-        (splitUserSkill) =>
-          splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
-      ),
-    );
-    return {
-      name: skills,
-      isExisInResume: isExisInResume,
-    };
-  }
-
-  classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
-    const splittedUserSkill = this.splitUserSkill(userSkill);
-    const classifiedSkill = skillDatas.map((skillData) => {
-      if (
-        skillData.name.some((skill) =>
-          splittedUserSkill.some(
-            (splitUserSkill) =>
-              splitUserSkill.toLocaleLowerCase() == skill.toLocaleLowerCase(),
-          ),
-        )
-      ) {
-        return { name: skillData.name };
-      } else {
-        return { name: [] };
-      }
-    });
-    const filteredSkill = classifiedSkill.filter(
-      (skill) => skill.name.length > 0,
-    );
-    return filteredSkill;
-  }
-
-  splitUserSkill(userSkill: string) {
-    const userSkillWithLineBreak = userSkill
-      .replace(/[,\/]/g, '\n')
-      .replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`);
-    const splittedUserSkill = userSkillWithLineBreak.split('\n');
-    const trimmedUserSkill = splittedUserSkill.map((userSkill) =>
-      userSkill.trim(),
-    );
-    return trimmedUserSkill;
-  }
-
-  removeDuplicateSkill(data: ICareerPathClassify) {
-    const uniqedData: ICareerPathClassify = {
-      ...data,
-      related_careers: data.related_careers.map((career) => {
-        const currentCareerDomain = career.skill_domains;
-        return {
-          ...career,
-          alt_skills: career.alt_skills.filter((altSkill) => {
-            return !currentCareerDomain.some((domain) => {
-              return domain.skill_list.some((skill) => {
-                return skill.name.join('') == altSkill.name.join('');
-              });
-            });
-          }),
-        };
-      }),
-    };
-    return uniqedData;
-  }
-
   async getExplorationData() {
     const careerPathData = await this.databaseService.getAllCareerData();
-    const sortedCareerPathData = this.sortCareerData(careerPathData);
-    return sortedCareerPathData;
-  }
-
-  sortCareerData(careerPathData) {
-    const sortedCareerPathData = careerPathData
-      .sort((a, b) => a.career_path_name.localeCompare(b.career_path_name))
-      .map((careerPath) => {
-        const sortedCareerPath = careerPath.related_careers.sort((a, b) =>
-          a.career.localeCompare(b.career),
-        );
-        return {
-          ...careerPath,
-          related_careers: sortedCareerPath.map((career) => {
-            const sortedSkillDomain = career.skill_domains.sort((a, b) =>
-              a.id.localeCompare(b.id),
-            );
-            const mappedSkillDomain = sortedSkillDomain.map((domain) => {
-              return {
-                ...domain,
-                skill_list: domain.skill_list.sort((a, b) =>
-                  a[0].localeCompare(b[0]),
-                ),
-              };
-            });
-            return {
-              ...career,
-              soft_skills: career.soft_skills.sort((a, b) =>
-                a.id.localeCompare(b.id),
-              ),
-              skill_domains: mappedSkillDomain,
-            };
-          }),
-        };
-      });
-
+    const sortedCareerPathData = this.resumeService.sortCareerData(careerPathData);
     return sortedCareerPathData;
   }
 }

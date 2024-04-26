@@ -10,14 +10,7 @@ export class CareerController {
   @Get()
   getCareerData(@Query() query: ICareerInsightRequest) {
     try {
-      if (!query.career_path || !query.object_id) {
-        return this.careerService.getExplorationData();
-      } else {
-        return this.careerService.getCareerInsight(
-          query.career_path,
-          query.object_id,
-        );
-      }
+      return this.careerService.getCareerData(query.career_path, query.object_id);
     } catch (err) {
       return err;
     }
