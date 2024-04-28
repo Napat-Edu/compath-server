@@ -85,38 +85,16 @@ export class CareerService {
       const careerPathData: ICareerPathWithSkill = await this.databaseService.getCareerPathDataWithSkill(careerPath);
       const userResumeHistory = await this.databaseService.getPredictionHistoryById(objectId);
 
-      const userResume = userResumeHistory.resume_input;
       const careermate_count = await this.resumeService.countCareermate(careerPath);
-
-      const mappedRelatedCareer = careerPathData.related_careers.map(
-        (career) => {
-          return {
-            ...career,
-            skill_domains: career.skill_domains.map((domain) => {
-              return {
-                ...domain,
-                skill_list: domain.skill_list.map((skill): ISkillType => {
-                  return this.resumeService.classifyCoreSkill(skill, userResume.skill);
-                }),
-              };
-            }),
-            alt_skills: this.resumeService.classifyAlternativeSkill(
-              skillDatas,
-              userResume.skill,
-            ),
-          };
-        },
-      );
+      const mappedRelatedCareer = this.resumeService.mapCareerAndSkill(careerPathData, skillDatas, userResumeHistory.resume_input);
 
       const classifiedInsightData: ICareerPathClassify = {
         ...careerPathData,
         related_careers: mappedRelatedCareer,
         careermate_count: careermate_count,
       };
+      const uniqueInsightData = this.resumeService.removeDuplicateSkill(classifiedInsightData);
 
-      const uniqueInsightData = this.resumeService.removeDuplicateSkill(
-        classifiedInsightData,
-      );
       const sortedInsightData = {
         ...uniqueInsightData,
         related_careers: uniqueInsightData.related_careers.sort((a, b) =>

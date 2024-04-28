@@ -302,40 +302,52 @@ export class ResumeService {
     }
   }
 
+  mapCareerAndSkill(careerPathData: ICareerPathWithSkill, skillDatas: SkillDataDto[], userResume: IUserResumeInfo) {
+    const mappedRelatedCareer = careerPathData.related_careers.map((career) => {
+      const updatedSkillDomains = career.skill_domains.map((domain) => {
+        const updatedSkillList = domain.skill_list.map((skill) => {
+          return this.classifyCoreSkill(skill, userResume.skill);
+        });
+        return { ...domain, skill_list: updatedSkillList };
+      });
+    
+      const alt_skills = this.classifyAlternativeSkill(
+        skillDatas,
+        userResume.skill,
+      );
+    
+      return { ...career, skill_domains: updatedSkillDomains, alt_skills };
+    });
+    return mappedRelatedCareer;
+  }
+
   sortCareerData(careerPathData) {
     const sortedCareerPathData = careerPathData
       .sort((a, b) => a.career_path_name.localeCompare(b.career_path_name))
-      .map((careerPath) => {
-        const sortedCareerPath = careerPath.related_careers.sort((a, b) =>
-          a.career.localeCompare(b.career),
-        );
-        return {
-          ...careerPath,
-          related_careers: sortedCareerPath.map((career) => {
-            const sortedSkillDomain = career.skill_domains.sort((a, b) =>
-              a.id.localeCompare(b.id),
-            );
-            const mappedSkillDomain = sortedSkillDomain.map((domain) => {
-              return {
-                ...domain,
-                skill_list: domain.skill_list.sort((a, b) =>
-                  a[0].localeCompare(b[0]),
-                ),
-              };
-            });
-            return {
-              ...career,
-              soft_skills: career.soft_skills.sort((a, b) =>
-                a.id.localeCompare(b.id),
-              ),
-              skill_domains: mappedSkillDomain,
-            };
-          }),
-        };
-      });
+      .map(careerPath => ({
+        ...careerPath,
+        related_careers: careerPath.related_careers
+          .sort((a, b) => a.career.localeCompare(b.career))
+          .map(career => ({
+            ...career,
+            soft_skills: this.sortByLocaleCompare(career.soft_skills, item => item.id),
+            skill_domains: this.processSkillDomains(career.skill_domains)
+          }))
+      }));
 
     return sortedCareerPathData;
   }
+
+  sortByLocaleCompare (items, accessor) {
+    return items.sort((a, b) => accessor(a).localeCompare(accessor(b)));
+  };
+
+  processSkillDomains (domains) {
+    return domains.map(domain => ({
+      ...domain,
+      skill_list: this.sortByLocaleCompare(domain.skill_list,item => item[0])
+    })).sort((a, b) => a.id.localeCompare(b.id));
+  };
 
   splitUserSkill(userSkill: string) {
     const userSkillWithLineBreak = userSkill
