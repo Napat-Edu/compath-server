@@ -97,9 +97,7 @@ export class CareerService {
 
       const sortedInsightData = {
         ...uniqueInsightData,
-        related_careers: uniqueInsightData.related_careers.sort((a, b) =>
-          a.career.localeCompare(b.career),
-        ),
+        related_careers: this.resumeService.sortRelatedCareer(uniqueInsightData.related_careers)
       };
 
       return sortedInsightData;

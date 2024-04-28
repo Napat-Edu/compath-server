@@ -279,10 +279,18 @@ export class DatabaseService {
 
 @Injectable()
 export class ResumeService {
+  private careerSorter: CareerSort;
+  private idSorter: IdSort;
+  private localeSorter: LocaleSort;
+
   constructor(
     @InjectModel(ResumeHistory.name)
     private resumeHistoryModel: Model<ResumeHistory>,
-  ) {}
+  ) {
+    this.careerSorter = new CareerSort();
+    this.idSorter = new IdSort();
+    this.localeSorter = new LocaleSort();
+  }
 
   async countCareermate(careerPath: string): Promise<number> {
     try {
@@ -329,7 +337,7 @@ export class ResumeService {
           .sort((a, b) => a.career.localeCompare(b.career))
           .map(career => ({
             ...career,
-            soft_skills: this.sortByLocaleCompare(career.soft_skills, item => item.id),
+            soft_skills: this.localeSorter.sort(career.soft_skills, item => item.id),
             skill_domains: this.processSkillDomains(career.skill_domains)
           }))
       }));
@@ -337,15 +345,12 @@ export class ResumeService {
     return sortedCareerPathData;
   }
 
-  sortByLocaleCompare (items, accessor) {
-    return items.sort((a, b) => accessor(a).localeCompare(accessor(b)));
-  };
-
   processSkillDomains (domains) {
-    return domains.map(domain => ({
+    const mappedDomains = domains.map(domain => ({
       ...domain,
-      skill_list: this.sortByLocaleCompare(domain.skill_list,item => item[0])
-    })).sort((a, b) => a.id.localeCompare(b.id));
+      skill_list: this.localeSorter.sort(domain.skill_list,item => item[0])
+    }));
+    return this.idSorter.sort(mappedDomains);
   };
 
   splitUserSkill(userSkill: string) {
@@ -414,6 +419,32 @@ export class ResumeService {
     );
     return filteredSkill;
   }
+
+  sortRelatedCareer(related_careers: any) {
+    return this.careerSorter.sort(related_careers)
+  }
+}
+
+abstract class BaseSort {
+  protected abstract sort(data: any, acc: any | undefined): any;
+}
+
+export class CareerSort extends BaseSort {
+  sort(related_careers) {
+    return related_careers.sort((a, b) => a.career.localeCompare(b.career));
+  }
+}
+
+export class IdSort extends BaseSort {
+  sort(data) {
+    return data.sort((a, b) => a.id.localeCompare(b.id));
+  }
+}
+
+export class LocaleSort extends BaseSort {
+  sort(items, accessor) {
+    return items.sort((a, b) => accessor(a).localeCompare(accessor(b)));
+  };
 }
 
 export class Developer implements CareerPathDataDto {
