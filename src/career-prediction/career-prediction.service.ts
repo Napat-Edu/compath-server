@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
+import { ocrSpace } from 'ocr-space-api-wrapper';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AppService } from 'src/app.service';
 import { CareerPathDataDto } from 'src/dtos/career-path-data.dto';
@@ -56,6 +57,21 @@ export class CareerPredictionService {
     return result;
   }
 
+  async createCareerPredictionByPDF(file: Express.Multer.File, owner: string) {
+    const buffer = Buffer.from(file.buffer).toString('base64');
+    const parsedResumeText = await this.ocrResume(buffer);
+    const newResumeObj: IUserResumeInput = {
+      resume_owner: owner || 'anonymous',
+      resume_input: {
+        skill: parsedResumeText,
+        educational: ' ',
+        experience: ' ',
+        agreement: true,
+      },
+    };
+    return this.createCareerPrediction(newResumeObj);
+  }
+
   async findCareerPathInfo(careerPath: string) {
     try {
       let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
@@ -89,6 +105,21 @@ export class CareerPredictionService {
       ),
     );
     return predictionResult.data;
+  }
+
+  async ocrResume(buffer: string) {
+    try {
+      const parsedResume = await ocrSpace(
+        `data:application/pdf;base64,${buffer}`,
+        {
+          apiKey: process.env.OCR_API_KEY,
+          language: 'eng',
+        },
+      );
+      return parsedResume.ParsedResults[0].ParsedText;
+    } catch (error) {
+      return error;
+    }
   }
 
   createNewResumeHistory(
