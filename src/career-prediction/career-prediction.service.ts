@@ -57,15 +57,15 @@ export class CareerPredictionService {
     return result;
   }
 
-  async createCareerPredictionByPDF(file: Express.Multer.File) {
+  async createCareerPredictionByPDF(file: Express.Multer.File, owner: string) {
     const buffer = Buffer.from(file.buffer).toString('base64');
     const parsedResumeText = await this.ocrResume(buffer);
     const newResumeObj: IUserResumeInput = {
-      resume_owner: 'anonymous',
+      resume_owner: owner || 'anonymous',
       resume_input: {
-        skill: '',
-        educational: parsedResumeText,
-        experience: '',
+        skill: parsedResumeText,
+        educational: ' ',
+        experience: ' ',
         agreement: true,
       },
     };

@@ -41,9 +41,13 @@ export class CareerPredictionController {
       }),
     )
     file: Express.Multer.File,
+    @Body('owner') owner: string,
   ) {
     try {
-      return this.careerPredictionService.createCareerPredictionByPDF(file);
+      return this.careerPredictionService.createCareerPredictionByPDF(
+        file,
+        owner,
+      );
     } catch (error) {
       return error;
     }
