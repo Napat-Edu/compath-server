@@ -9,6 +9,7 @@ import { ResumeHistory, ResumeHistorySchema } from 'src/schemas/resume-history.s
 import { ExternalApiService } from 'src/services/external-api.service';
 import { CareerPathData, CareerPathDataSchema } from 'src/schemas/career-path-data.schema';
 import { SkillData, SkillDataSchema } from 'src/schemas/skill-data.schema';
+import { CareerProcessorService } from 'src/services/career-processor.service';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { SkillData, SkillDataSchema } from 'src/schemas/skill-data.schema';
     CareerService,
     CareerFactoryService,
     DatabaseService,
-    ExternalApiService
+    ExternalApiService,
+    CareerProcessorService
   ],
 })
 export class CareerModule { }

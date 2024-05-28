@@ -65,12 +65,12 @@ export class CareerController {
   getCareerData(@Query() query: ICareerInsightRequest) {
     try {
       if (query.career_path && query.object_id) {
-        return this.careerService.GetCareerData(
+        return this.careerService.getCareerData(
           query.career_path,
           query.object_id,
         );
       } else {
-        return this.careerService.GetAllCareerData();
+        return this.careerService.getAllCareerData();
       }
     } catch (error) {
       return error;
