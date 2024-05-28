@@ -15,43 +15,51 @@ export class AuthService {
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   async exchangeToken(code: string) {
-    const client_id = process.env.CLIENT_ID;
-    const client_secret = process.env.CLIENT_SECRET;
-    const redirect_uri = process.env.BASE_CLIENT;
-    const grant_type = 'authorization_code';
+    try {
+      const client_id = process.env.CLIENT_ID;
+      const client_secret = process.env.CLIENT_SECRET;
+      const redirect_uri = process.env.BASE_CLIENT;
+      const grant_type = 'authorization_code';
 
-    const bodyParams = new URLSearchParams({
-      code,
-      client_id,
-      client_secret,
-      redirect_uri,
-      grant_type,
-    });
+      const bodyParams = new URLSearchParams({
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+        grant_type,
+      });
 
-    const token = await firstValueFrom(
-      this.httpService
-        .post('https://oauth2.googleapis.com/token', bodyParams)
-        .pipe(
-          catchError((err: AxiosError) => {
-            this.logger.error(err.response.data);
-            throw 'error occured';
-          }),
-        ),
-    );
+      const token = await firstValueFrom(
+        this.httpService
+          .post('https://oauth2.googleapis.com/token', bodyParams)
+          .pipe(
+            catchError((err: AxiosError) => {
+              this.logger.error(err.response.data);
+              throw 'error occured';
+            }),
+          ),
+      );
 
-    return token.data;
+      return token.data;
+    } catch (error) {
+      return error;
+    }
   }
 
   async login(details: UserDto) {
-    const user = await this.userModel.findOne({ email: details.email });
-    if (user) {
-      return user;
-    } else {
-      const newUser = new this.userModel(details);
-      return newUser.save();
+    try {
+      const user = await this.userModel.findOne({ email: details.email });
+      if (user) {
+        return user;
+      } else {
+        const newUser = new this.userModel(details);
+        return newUser.save();
+      }
+    } catch (error) {
+      return error;
     }
   }
 }

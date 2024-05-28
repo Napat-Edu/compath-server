@@ -8,14 +8,7 @@ const ENV_MODULE = ConfigModule.forRoot({
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CareerInsightModule } from './career-insight/career-insight.module';
-import { CareerExplorationModule } from './career-exploration/career-exploration.module';
-import {
-  ResumeHistory,
-  ResumeHistorySchema,
-} from './schemas/resume-history.schema';
 import { AuthModule } from './auth/auth.module';
-import { PassportModule } from '@nestjs/passport';
 import { CareerModule } from './career/career.module';
 
 @Module({
@@ -24,14 +17,9 @@ import { CareerModule } from './career/career.module';
     MongooseModule.forRoot(process.env.MONGODB_URL, {
       dbName: process.env.DB_NAME,
     }),
-    MongooseModule.forFeature([
-      { name: ResumeHistory.name, schema: ResumeHistorySchema },
-    ]),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CareerInsightModule,
-    CareerExplorationModule,
     CareerModule,
     AuthModule,
   ],
