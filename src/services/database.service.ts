@@ -2,38 +2,46 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { CareerPathDataDto } from "src/dtos/career-path-data.dto";
-import { CareerPathData } from "src/schemas/career-path-data.schema";
+import { ResumeHistoryDto } from "src/dtos/resume-input.dto";
+import { IUserResumeInput } from "src/interfaces/career-prediction.interface";
 import { ResumeHistory } from "src/schemas/resume-history.schema";
 
 @Injectable()
 export class DatabaseService {
     constructor(
-        @InjectModel(CareerPathData.name)
-        private careerPathDataModel: Model<CareerPathData>,
         @InjectModel(ResumeHistory.name)
         private resumeHistoryModel: Model<ResumeHistory>,
     ) { }
 
-    async findCareerPath(careerPath: string) {
+    createNewResumeHistory(resume: IUserResumeInput, careerPathInfo: CareerPathDataDto) {
         try {
-            let careerPathInfo: CareerPathDataDto = await this.careerPathDataModel
-                .findOne({
-                    career_path_name: careerPath,
+            const newResumeHistory: ResumeHistoryDto = {
+                resume_owner: resume.resume_owner,
+                resume_input: resume.resume_input,
+                input_date: new Date(),
+                prediction_result: careerPathInfo.career_path_name,
+            };
+            const createdResumeHistory = new this.resumeHistoryModel(newResumeHistory);
+            return createdResumeHistory.save();
+        } catch (error) {
+            return error;
+        }
+    }
+
+    async countCareermate(careerPath: string): Promise<number> {
+        try {
+            const careermate_count = await this.resumeHistoryModel
+                .countDocuments({
+                    prediction_result: careerPath,
+                    $and: [
+                        { 'resume_input.skill': { $nin: ['-', '.'] } },
+                        { 'resume_input.experience': { $nin: ['-', '.'] } },
+                    ],
                 })
                 .exec();
-
-            if (!careerPathInfo) {
-                careerPathInfo = await this.careerPathDataModel
-                    .findOne({
-                        career_path_name: 'Unknown',
-                    })
-                    .exec();
-            }
-            const jsonCareerPathInfo = JSON.stringify(careerPathInfo);
-            const parsedCareerPathInfo = JSON.parse(jsonCareerPathInfo);
-            return parsedCareerPathInfo;
-        } catch (err) {
-            return err;
+            return careermate_count;
+        } catch (error) {
+            return error;
         }
     }
 }

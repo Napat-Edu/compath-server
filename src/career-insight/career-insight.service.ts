@@ -33,7 +33,7 @@ export class CareerInsightService {
       .exec();
     const userResume = userResumeHistory.resume_input;
 
-    const careermate_count = await this.appService.countCareermate(careerPath);
+    // const careermate_count = await this.appService.countCareermate(careerPath);
 
     const mappedRelatedCareer = careerPathData.related_careers.map((career) => {
       return {
@@ -53,7 +53,7 @@ export class CareerInsightService {
     const classifiedInsightData: ICareerPathClassify = {
       ...careerPathData,
       related_careers: mappedRelatedCareer,
-      careermate_count: careermate_count,
+      careermate_count: 0,
     };
 
     const uniqueInsightData = this.removeDuplicateSkill(classifiedInsightData);
