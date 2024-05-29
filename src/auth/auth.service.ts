@@ -1,20 +1,17 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { AxiosError } from 'axios';
-import { Model } from 'mongoose';
 import { catchError, firstValueFrom } from 'rxjs';
 import { UserDto } from 'src/dtos/user.dto';
-import { User, UserDocument } from 'src/schemas/user.schema';
+import { DatabaseService } from 'src/services/database.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger();
 
   constructor(
-    @InjectModel(User.name)
-    private userModel: Model<UserDocument>,
     private readonly httpService: HttpService,
+    private readonly databaseService: DatabaseService,
   ) { }
 
   async exchangeToken(code: string) {
@@ -51,12 +48,11 @@ export class AuthService {
 
   async login(details: UserDto) {
     try {
-      const user = await this.userModel.findOne({ email: details.email });
+      const user = await this.databaseService.findUserById(details.email);
       if (user) {
         return user;
       } else {
-        const newUser = new this.userModel(details);
-        return newUser.save();
+        return await this.databaseService.createNewUser(details);
       }
     } catch (error) {
       return error;

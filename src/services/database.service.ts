@@ -4,11 +4,13 @@ import { Model } from "mongoose";
 import { CareerPathDataDto } from "src/dtos/career-path-data.dto";
 import { ResumeHistoryDto } from "src/dtos/resume-input.dto";
 import { SkillDataDto } from "src/dtos/skill-data.dto";
+import { UserDto } from "src/dtos/user.dto";
 import { ICareerPathWithSkill } from "src/interfaces/career-insight.interface";
 import { IUserResumeInput } from "src/interfaces/career-prediction.interface";
 import { CareerPathData } from "src/schemas/career-path-data.schema";
 import { ResumeHistory } from "src/schemas/resume-history.schema";
 import { SkillData } from "src/schemas/skill-data.schema";
+import { User, UserDocument } from "src/schemas/user.schema";
 
 @Injectable()
 export class DatabaseService {
@@ -19,6 +21,8 @@ export class DatabaseService {
         private careerPathDataModel: Model<CareerPathData>,
         @InjectModel(SkillData.name)
         private skillDataModel: Model<SkillData>,
+        @InjectModel(User.name)
+        private userModel: Model<UserDocument>,
     ) { }
 
     createNewResumeHistory(resume: IUserResumeInput, careerPathInfo: CareerPathDataDto) {
@@ -277,5 +281,15 @@ export class DatabaseService {
         } catch (error) {
             return error;
         }
+    }
+
+    async findUserById(email: string) {
+        const user = await this.userModel.findOne({ email: email });
+        return user;
+    }
+
+    createNewUser(details: UserDto) {
+        const newUser = new this.userModel(details);
+        return newUser.save();
     }
 }
