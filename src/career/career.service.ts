@@ -6,7 +6,7 @@ import { IResumePredictionResult, IUserResumeInput } from 'src/interfaces/career
 import { CareerFactoryService } from 'src/services/career-factory.service';
 import { CareerProcessorService } from 'src/services/career-processor.service';
 import { DatabaseService } from 'src/services/database.service';
-import { ExternalApiService } from 'src/services/external-api.service';
+import { MLService, OcrService } from 'src/services/external-api.service';
 
 @Injectable()
 export class CareerService {
@@ -14,13 +14,14 @@ export class CareerService {
   constructor(
     private readonly careerFactoryService: CareerFactoryService,
     private readonly databaseService: DatabaseService,
-    private readonly externalApiService: ExternalApiService,
-    private readonly careerProcessorService: CareerProcessorService
+    private readonly careerProcessorService: CareerProcessorService,
+    private readonly ocrService: OcrService,
+    private readonly mlService: MLService
   ) { }
 
   async createResumeHistory(resume: IUserResumeInput) {
     try {
-      const careerPath = await this.externalApiService.classificationCareerpath(resume.resume_input);
+      const careerPath = await this.mlService.call(resume.resume_input);
       const careerPathInfo = await this.careerFactoryService.getCareerPathInfo(careerPath);
       const createdResumeHistory: ResumeHistoryDto = this.databaseService.createNewResumeHistory(resume, careerPathInfo);
       const careermateCount = await this.databaseService.countCareermate(careerPath)
@@ -39,7 +40,7 @@ export class CareerService {
   async createResumeHistoryByPDF(file: Express.Multer.File, owner: string) {
     try {
       const buffer = Buffer.from(file.buffer).toString('base64');
-      const parsedResumeText = await this.externalApiService.ocrResume(buffer);
+      const parsedResumeText = await this.ocrService.call(buffer);
       const newResumeObj: IUserResumeInput = {
         resume_owner: owner || 'anonymous',
         resume_input: {

@@ -5,15 +5,16 @@ import { ocrSpace } from "ocr-space-api-wrapper";
 import { catchError, firstValueFrom } from "rxjs";
 import { IUserResumeInfo } from "src/interfaces/career-prediction.interface";
 
+interface ExternalApi {
+    call(payload: any): Promise<any>;
+}
+
 @Injectable()
-export class ExternalApiService {
-    private readonly logger = new Logger();
+export class OcrService implements ExternalApi {
 
-    constructor(
-        private readonly httpService: HttpService,
-    ) { }
+    constructor() { }
 
-    async ocrResume(buffer: string) {
+    async call(buffer: string) {
         try {
             const parsedResume = await ocrSpace(
                 `data:application/pdf;base64,${buffer}`,
@@ -27,8 +28,17 @@ export class ExternalApiService {
             return error;
         }
     }
+}
 
-    async classificationCareerpath(resumeInfo: IUserResumeInfo) {
+@Injectable()
+export class MLService implements ExternalApi {
+    private readonly logger = new Logger();
+
+    constructor(
+        private readonly httpService: HttpService,
+    ) { }
+
+    async call(resumeInfo: IUserResumeInfo) {
         try {
             const predictionResult = await firstValueFrom(
                 this.httpService.post(process.env.MODEL_API, resumeInfo).pipe(
