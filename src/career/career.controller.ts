@@ -61,7 +61,7 @@ export class CareerController {
     }
   }
 
-  @Get()
+  @Get('info')
   getCareerData(@Query() query: ICareerInsightRequest) {
     try {
       if (query.career_path && query.object_id) {
