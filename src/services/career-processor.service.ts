@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { SkillDataDto } from 'src/dtos/skill-data.dto';
 import { ICareerPathClassify } from 'src/interfaces/career-insight.interface';
-import { sortByLocale, sortCareers } from './utils';
 
 @Injectable()
 export class CareerProcessorService {
   constructor() { }
 
+  localeCompareByKey(key: string | number, object: any) {
+    return object.sort((a, b) => a[key].localeCompare(b[key]));
+  }
+
   sortCareerPathData(careerPathData) {
-    return careerPathData
-      .sort(sortByLocale('career_path_name'))
+    return this.localeCompareByKey('career_path_name', careerPathData)
       .map((careerPath) => ({
         ...careerPath,
-        related_careers: sortCareers(careerPath.related_careers),
+        related_careers: this.sortCareers(careerPath.related_careers),
       }));
   }
 
@@ -29,7 +31,19 @@ export class CareerProcessorService {
     }));
   }
 
-  classifyCoreSkill(skills: string[], userSkill: string) {
+  removeDuplicateSkill(data: ICareerPathClassify) {
+    const newRelatedCareers = data.related_careers.map((career) => ({
+      ...career,
+      alt_skills: career.alt_skills.filter((altSkill) => !this.isDuplicate(career, altSkill)),
+    }));
+
+    return {
+      ...data,
+      related_careers: newRelatedCareers,
+    };
+  }
+
+  private classifyCoreSkill(skills: string[], userSkill: string) {
     const splittedUserSkill = this.splitUserSkill(userSkill);
     const isExisInResume = skills.some((skill) =>
       splittedUserSkill.some(
@@ -40,7 +54,7 @@ export class CareerProcessorService {
     return { name: skills, isExisInResume };
   }
 
-  classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
+  private classifyAlternativeSkill(skillDatas: SkillDataDto[], userSkill: string) {
     const splittedUserSkill = this.splitUserSkill(userSkill);
     return skillDatas
       .map((skillData) => ({
@@ -54,7 +68,7 @@ export class CareerProcessorService {
       .filter((skill) => skill.name.length > 0);
   }
 
-  splitUserSkill(userSkill: string) {
+  private splitUserSkill(userSkill: string) {
     return userSkill
       .replace(/[,\/]/g, '\n')
       .replace(/\((.*?)\)/g, (_, content) => `\n${content}\n`)
@@ -62,22 +76,28 @@ export class CareerProcessorService {
       .map((skill) => skill.trim());
   }
 
-  removeDuplicateSkill(data: ICareerPathClassify) {
-    const newRelatedCareers = data.related_careers.map((career) => ({
-      ...career,
-      alt_skills: career.alt_skills.filter(
-        (altSkill) =>
-          !career.skill_domains.some((domain) =>
-            domain.skill_list.some(
-              (skill) => skill.name.join('') === altSkill.name.join(''),
-            ),
-          ),
-      ),
-    }));
+  private sortCareers(careers) {
+    return this.localeCompareByKey('career', careers)
+      .map((career) => ({
+        ...career,
+        soft_skills: this.localeCompareByKey('id', career.soft_skills),
+        skill_domains: this.sortSkillDomains(career.skill_domains),
+      }));
+  }
 
-    return {
-      ...data,
-      related_careers: newRelatedCareers,
-    };
+  private sortSkillDomains(domains) {
+    return this.localeCompareByKey('id', domains)
+      .map((domain) => ({
+        ...domain,
+        skill_list: this.localeCompareByKey(0, domain.skill_list)
+      }));
+  }
+
+  private isDuplicate(career, altSkill) {
+    return career.skill_domains.some((domain) =>
+      domain.skill_list.some(
+        (skill) => skill.name.join('') === altSkill.name.join(''),
+      ),
+    );
   }
 }
