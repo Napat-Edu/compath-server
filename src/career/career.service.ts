@@ -7,6 +7,7 @@ import { CareerFactoryService } from 'src/services/career-factory.service';
 import { CareerProcessorService } from 'src/services/career-processor.service';
 import { DatabaseService } from 'src/services/database.service';
 import { ExternalApiService } from 'src/services/external-api.service';
+import { sortByLocale } from 'src/services/utils';
 
 @Injectable()
 export class CareerService {
@@ -95,9 +96,7 @@ export class CareerService {
     const uniqueInsightData = this.careerProcessorService.removeDuplicateSkill(classifiedInsightData);
     const sortedInsightData = {
       ...uniqueInsightData,
-      related_careers: uniqueInsightData.related_careers.sort((a, b) =>
-        a.career.localeCompare(b.career),
-      ),
+      related_careers: uniqueInsightData.related_careers.sort(sortByLocale('career')),
     };
 
     return sortedInsightData;

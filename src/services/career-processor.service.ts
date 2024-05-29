@@ -5,7 +5,7 @@ import { sortByLocale, sortCareers } from './utils';
 
 @Injectable()
 export class CareerProcessorService {
-  constructor() {}
+  constructor() { }
 
   sortCareerPathData(careerPathData) {
     return careerPathData
@@ -63,19 +63,21 @@ export class CareerProcessorService {
   }
 
   removeDuplicateSkill(data: ICareerPathClassify) {
+    const newRelatedCareers = data.related_careers.map((career) => ({
+      ...career,
+      alt_skills: career.alt_skills.filter(
+        (altSkill) =>
+          !career.skill_domains.some((domain) =>
+            domain.skill_list.some(
+              (skill) => skill.name.join('') === altSkill.name.join(''),
+            ),
+          ),
+      ),
+    }));
+
     return {
       ...data,
-      related_careers: data.related_careers.map((career) => ({
-        ...career,
-        alt_skills: career.alt_skills.filter(
-          (altSkill) =>
-            !career.skill_domains.some((domain) =>
-              domain.skill_list.some(
-                (skill) => skill.name.join('') === altSkill.name.join(''),
-              ),
-            ),
-        ),
-      })),
+      related_careers: newRelatedCareers,
     };
   }
 }

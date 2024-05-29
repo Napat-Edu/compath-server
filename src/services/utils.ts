@@ -1,12 +1,12 @@
-export const sortByLocale = (key: string) => (a, b) =>
+export const sortByLocale = (key: string | number) => (a, b) =>
   a[key].localeCompare(b[key]);
 
 export const sortSkillList = (skillList: string[][]) =>
-  skillList.sort((a, b) => a[0].localeCompare(b[0]));
+  skillList.sort(sortByLocale(0));
 
 export const sortSkillDomains = (domains) =>
   domains
-    .sort((a, b) => a.id.localeCompare(b.id))
+    .sort(sortByLocale('id'))
     .map((domain) => ({
       ...domain,
       skill_list: sortSkillList(domain.skill_list),
@@ -14,9 +14,9 @@ export const sortSkillDomains = (domains) =>
 
 export const sortCareers = (careers) =>
   careers
-    .sort((a, b) => a.career.localeCompare(b.career))
+    .sort(sortByLocale('career'))
     .map((career) => ({
       ...career,
-      soft_skills: career.soft_skills.sort((a, b) => a.id.localeCompare(b.id)),
+      soft_skills: career.soft_skills.sort(sortByLocale('id')),
       skill_domains: sortSkillDomains(career.skill_domains),
     }));
