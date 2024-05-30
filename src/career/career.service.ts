@@ -23,7 +23,7 @@ export class CareerService {
     try {
       const careerPath = await this.mlService.call(resume.resume_input);
       const careerPathInfo = await this.careerFactoryService.getCareerPathInfo(careerPath);
-      const createdResumeHistory: ResumeHistoryDto = this.databaseService.createNewResumeHistory(resume, careerPathInfo);
+      const createdResumeHistory: ResumeHistoryDto = await this.databaseService.createNewResumeHistory(resume, careerPathInfo);
       const careermateCount = await this.databaseService.countCareermate(careerPath)
       const result: IResumePredictionResult = {
         ...careerPathInfo,

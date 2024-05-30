@@ -10,6 +10,7 @@ import { MLService, OcrService } from 'src/services/external-api.service';
 import { CareerPathData, CareerPathDataSchema } from 'src/schemas/career-path-data.schema';
 import { SkillData, SkillDataSchema } from 'src/schemas/skill-data.schema';
 import { CareerProcessorService } from 'src/services/career-processor.service';
+import { User, UserSchema } from 'src/schemas/user.schema';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CareerProcessorService } from 'src/services/career-processor.service';
       { name: ResumeHistory.name, schema: ResumeHistorySchema },
       { name: CareerPathData.name, schema: CareerPathDataSchema },
       { name: SkillData.name, schema: SkillDataSchema },
+      { name: User.name, schema: UserSchema }
     ]),
   ],
   controllers: [CareerController],

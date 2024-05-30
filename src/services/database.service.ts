@@ -25,7 +25,7 @@ export class DatabaseService {
         private userModel: Model<UserDocument>,
     ) { }
 
-    createNewResumeHistory(resume: IUserResumeInput, careerPathInfo: CareerPathDataDto) {
+    async createNewResumeHistory(resume: IUserResumeInput, careerPathInfo: CareerPathDataDto) {
         try {
             const newResumeHistory: ResumeHistoryDto = {
                 resume_owner: resume.resume_owner,
